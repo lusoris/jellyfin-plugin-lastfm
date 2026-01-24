@@ -3,13 +3,13 @@
 ## Project Overview
 This is a C# plugin for Jellyfin that enables Last.fm music scrobbling, metadata enrichment, and loved-tracks synchronization. The plugin runs as a hosted service, monitors user playback in Jellyfin, and synchronizes data bidirectionally with Last.fm's API.
 
-**Target**: Jellyfin 10.11.6 | **Framework**: .NET 9.0 | **Status**: Active, archiving 2026-01-31
+**Target**: Jellyfin 10.11.6 | **Framework**: .NET 9.0 | **Repository**: https://github.com/lusoris/jellyfin-plugin-lastfm
 
 ## Repository Structure & Setup
 
 ### Quick Start
 ```bash
-git clone https://github.com/jesseward/jellyfin-plugin-lastfm.git
+git clone https://github.com/lusoris/jellyfin-plugin-lastfm.git
 cd jellyfin-plugin-lastfm
 dotnet build Jellyfin.Plugin.Lastfm/Jellyfin.Plugin.Lastfm.csproj
 ```
@@ -152,7 +152,7 @@ dotnet build
 ## Known Issues & Considerations
 
 1. **Branch Migration**: Repository recently migrated from `master` to `main` (Jan 2026)
-2. **Archive Notice**: Repo will be archived 2026-01-31 per README warning
+- **Archive Notice**: This is a maintained fork of the original jesseward/jellyfin-plugin-lastfm repository
 3. **Testing**: No dedicated test project; consider adding unit tests for API client
 4. **Security**: Passwords never stored; only session keys persisted (✓ Secure)
 

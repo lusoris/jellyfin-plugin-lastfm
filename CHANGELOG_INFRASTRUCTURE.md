@@ -1,7 +1,7 @@
 # Repository Update Changelog - January 24, 2026
 
 ## Summary
-Comprehensive update of the jellyfin-plugin-lastfm repository to modernize infrastructure, target latest Jellyfin version, and improve developer experience.
+Comprehensive modernization of the jellyfin-plugin-lastfm fork to target the latest Jellyfin version, improve infrastructure, and provide enhanced developer documentation.
 
 ## Changes Made
 
@@ -124,8 +124,7 @@ Comprehensive update of the jellyfin-plugin-lastfm repository to modernize infra
 ## Future Considerations
 - Jellyfin continues to release quarterly (next major version ~Q2 2026)
 - Last.fm API is stable; minimal breaking changes expected
-- Archive notice: Repository will be archived Jan 31, 2026 (per README)
-- Consider forking or maintaining as community edition after archive date
+- This fork is actively maintained and will stay current with Jellyfin releases
 
 ## Questions & Feedback
 
