@@ -20,7 +20,7 @@
 
 ### **Security & Development**
 - [**csharp-security.md**](csharp-security.md) - Password handling, HTTP security, API keys, input validation, JSON safety
-- [**development-workflow.md**](development-workflow.md) - Building, versioning, testing, CI/CD, Snyk scanning
+- [**development-workflow.md**](development-workflow.md) - Building, versioning, testing, CI/CD, **Jellyfin update checklist**
 - [**snyk_rules.instructions.md**](snyk_rules.instructions.md) - Security scanning requirements
 
 ---
@@ -61,18 +61,31 @@ Jellyfin.Plugin.Lastfm/
 - **Use async/await, LINQ, logging?** → [csharp-patterns.md](csharp-patterns.md)
 - **Handle passwords, HTTP, API keys?** → [csharp-security.md](csharp-security.md)
 - **Build release, run tests, scan security?** → [development-workflow.md](development-workflow.md)
+- **Update to new Jellyfin version?** → [development-workflow.md](development-workflow.md#jellyfin-update-checklist)
 
 ---
 
 ## 🔑 Key Facts
 
 - **Plugin ID**: `5e7fe7f0-b048-429e-a431-b1a7e69c930d`
+- **Version Scheme**: `{jellyfin_version}.{revision}` (e.g., `10.11.6.0`, `10.11.6.1`)
 - **DI Pattern**: Inject `IHttpClientFactory`, `ISessionManager`, `IUserDataManager`
-- **Event Handlers**: Use `async void` (required for Jellyfin events)
+- **Event Handlers**: `async void` is CORRECT for Jellyfin event subscriptions (not a code smell here!)
 - **Config**: XML-based, auto-persists via `Plugin.Instance.PluginConfiguration`
 - **Scrobbling**: Requires 30s+ duration, 4min OR 50% playtime, 15s duplicate window
 - **Auth**: Exchange password for permanent `SessionKey`, never store password
 - **Last.fm API**: MD5 signature required on all requests, ~1000 req/min rate limit
+
+---
+
+## ⚠️ Before Updating Jellyfin Target
+
+**ALWAYS check before bumping targetAbi:**
+1. Jellyfin release notes: https://github.com/jellyfin/jellyfin/releases
+2. GitHub issues for plugin compatibility
+3. Upstream repo (jesseward) for patches
+
+See [development-workflow.md](development-workflow.md#jellyfin-update-checklist) for full checklist.
 
 ---
 
@@ -97,5 +110,3 @@ Log success/error
 **Read full documentation**: Start with [jellyfin-architecture.md](jellyfin-architecture.md), then refer to specific guides as needed.
 
 **Related**: See each file's "Related" section for cross-references.
-
-#### 1. **Plugin.cs** - `BasePlugin<PluginConfiguration>` + `IHasWebPages`

@@ -18,6 +18,56 @@ dotnet clean Jellyfin.Plugin.Lastfm && dotnet build Jellyfin.Plugin.Lastfm
 
 ---
 
+## Jellyfin Update Checklist
+
+⚠️ **CRITICAL**: Before updating targetAbi to a new Jellyfin version, ALWAYS:
+
+### 1. Check Jellyfin Changelogs
+```
+https://github.com/jellyfin/jellyfin/releases
+```
+
+**Look for:**
+- Breaking API changes
+- Deprecated interfaces (e.g., `IServerEntryPoint` → `IHostedService`)
+- Changed event signatures (`ISessionManager`, `IUserDataManager`)
+- .NET version upgrades (e.g., .NET 8 → .NET 9)
+- Database migrations that affect plugins
+
+### 2. Check GitHub Issues
+```
+https://github.com/jellyfin/jellyfin/issues?q=plugin
+https://github.com/jesseward/jellyfin-plugin-lastfm/issues
+```
+
+**Look for:**
+- Reported plugin compatibility issues
+- Known breaking changes
+- Workarounds for API changes
+
+### 3. Check Upstream Repository
+```
+https://github.com/jesseward/jellyfin-plugin-lastfm/commits/master
+```
+
+**Look for:**
+- Recent patches for Jellyfin compatibility
+- Bug fixes we might be missing
+- Feature additions to consider merging
+
+### 4. Document Findings
+- Add notes to commit message about what was checked
+- Update this file if new patterns are discovered
+- Create GitHub issue if breaking changes found
+
+**Example from 10.11.0 → 10.11.6 analysis (Jan 2026):**
+- 10.11.1-10.11.6: Only bugfixes, no plugin API changes
+- 10.11.0: Major release with 396 changes, but `ISessionManager` events unchanged
+- `OnPlaybackXXX` REST endpoints deprecated (not events - we use events, so OK)
+- .NET 9 migration already completed by upstream
+
+---
+
 ## Version Management
 
 ### Version Scheme
