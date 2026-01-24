@@ -6,6 +6,7 @@
     "overview": "A plugin that scrobbles your Jellyfin music to LastFM",
     "owner": "lusoris",
     "category": "music",
+    "imageUrl": "https://raw.githubusercontent.com/lusoris/jellyfin-plugin-lastfm/main/resources/thumb.png",
     "versions": [
       {
         "version": "10.1.0.0",
