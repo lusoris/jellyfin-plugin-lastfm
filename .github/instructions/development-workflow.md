@@ -21,17 +21,17 @@ dotnet clean Jellyfin.Plugin.Lastfm && dotnet build Jellyfin.Plugin.Lastfm
 ## Version Management
 
 ### Version Scheme
-**Format**: `{jellyfin_major}.{jellyfin_minor}.{jellyfin_patch}-{plugin_revision}`
+**Format**: `{jellyfin_major}.{jellyfin_minor}.{jellyfin_patch}.{plugin_revision}`
 
 Examples:
-- `10.11.6-0` - Initial release for Jellyfin 10.11.6
-- `10.11.6-1` - Bugfix release for Jellyfin 10.11.6
-- `10.12.0-0` - Initial release for Jellyfin 10.12.0
+- `10.11.6.0` - Initial release for Jellyfin 10.11.6
+- `10.11.6.1` - Bugfix release for Jellyfin 10.11.6
+- `10.12.0.0` - Initial release for Jellyfin 10.12.0
 
 ### Assembly Version (Jellyfin.Plugin.Lastfm.csproj)
 ```xml
 <PropertyGroup>
-    <Version>10.11.6-0</Version>
+    <Version>10.11.6.0</Version>
     <TargetFramework>net9.0</TargetFramework>
     <AssemblyVersion>10.11.6.0</AssemblyVersion>
 </PropertyGroup>
@@ -39,17 +39,17 @@ Examples:
 
 ### Plugin Metadata (build.yaml)
 ```yaml
-version: 10.11.6-0             # Plugin version (matches Jellyfin + revision)
+version: 10.11.6.0             # Plugin version (matches Jellyfin + revision)
 targetAbi: 10.11.6.0           # Jellyfin ABI target
 ```
 
 ### Release Tagging
 ```bash
-git tag -a 10.11.6-0 -m "Release 10.11.6-0"
-git push origin 10.11.6-0
+git tag -a 10.11.6.0 -m "Release 10.11.6.0"
+git push origin 10.11.6.0
 ```
 
-**Tag Format**: `{jellyfin_version}-{revision}` (e.g., `10.11.6-0`, `10.11.6-1`)
+**Tag Format**: `{jellyfin_version}.{revision}` (e.g., `10.11.6.0`, `10.11.6.1`)
 
 ---
 
@@ -57,13 +57,13 @@ git push origin 10.11.6-0
 
 ### Trigger: Tag Push
 ```bash
-git tag -a 10.11.6-1 && git push origin 10.11.6-1
+git tag -a 10.11.6.1 && git push origin 10.11.6.1
 ```
 
 ### Automatic Steps:
 1. Workflow `create-github-release.yml` triggers
 2. Builds release: `dotnet build -c Release`
-3. Creates ZIP: `lastfm_10.11.6-1.zip`
+3. Creates ZIP: `lastfm_10.11.6.1.zip`
 4. Updates manifest: `manifest.json` with new version
 5. Creates GitHub Release with ZIP
 
@@ -74,7 +74,7 @@ dotnet build Jellyfin.Plugin.Lastfm -c Release
 
 # Create ZIP from bin/Release/net9.0/
 cd Jellyfin.Plugin.Lastfm/bin/Release/net9.0
-zip -j ../../../lastfm_10.11.6-0.zip Jellyfin.Plugin.Lastfm.dll
+zip -j ../../../lastfm_10.11.6.0.zip Jellyfin.Plugin.Lastfm.dll
 ```
 
 ---

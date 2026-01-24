@@ -18,10 +18,10 @@ Steps:
 4. Click "Save"
 5. Go to "Catalog" tab, find "Last.fm", and click "Install"
 
-### Option 2: Manual Download (10.11.6-0)
+### Option 2: Manual Download (10.11.6.0)
 Download directly from GitHub release:
-- **GitHub Release**: [github.com/lusoris/jellyfin-plugin-lastfm/releases/tag/10.11.6-0](https://github.com/lusoris/jellyfin-plugin-lastfm/releases/tag/10.11.6-0)
-- Direct Download: [lastfm_10.11.6-0.zip](https://github.com/lusoris/jellyfin-plugin-lastfm/releases/download/10.11.6-0/lastfm_10.11.6-0.zip)
+- **GitHub Release**: [github.com/lusoris/jellyfin-plugin-lastfm/releases/tag/10.11.6.0](https://github.com/lusoris/jellyfin-plugin-lastfm/releases/tag/10.11.6.0)
+- Direct Download: [lastfm_10.11.6.0.zip](https://github.com/lusoris/jellyfin-plugin-lastfm/releases/download/10.11.6.0/lastfm_10.11.6.0.zip)
 
 Upload the ZIP file to Jellyfin's Plugins section in the admin dashboard.
 

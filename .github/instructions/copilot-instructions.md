@@ -3,7 +3,7 @@
 **Purpose**: Scrobble music playback to Last.fm, sync loved tracks, provide metadata enrichment
 
 **Type**: C# .NET 9.0 Jellyfin Plugin | **Target**: Jellyfin 10.11.6 | **Framework**: .NET 9.0
-**Repository**: https://github.com/lusoris/jellyfin-plugin-lastfm | **Latest Release**: 10.11.6-0
+**Repository**: https://github.com/lusoris/jellyfin-plugin-lastfm | **Latest Release**: 10.11.6.0
 
 ---
 
