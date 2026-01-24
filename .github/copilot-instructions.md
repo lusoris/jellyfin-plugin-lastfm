@@ -173,4 +173,4 @@ dotnet build
 - [PluginConfiguration.cs](Jellyfin.Plugin.Lastfm/Configuration/PluginConfiguration.cs) - Config model
 - [LastfmUser.cs](Jellyfin.Plugin.Lastfm/Models/LastfmUser.cs) - User model with SessionKey
 - [ImportLastfmData.cs](Jellyfin.Plugin.Lastfm/ScheduledTasks/ImportLastfmData.cs) - Sync logic
-- [build.yaml](build.yaml) - Plugin metadata (version 10.1.0.0, ABI 10.11.6.0)
+- [build.yaml](build.yaml) - Plugin metadata (version 10.11.6-0, ABI 10.11.6.0)

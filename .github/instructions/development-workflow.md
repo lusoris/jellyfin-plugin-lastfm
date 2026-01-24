@@ -20,28 +20,36 @@ dotnet clean Jellyfin.Plugin.Lastfm && dotnet build Jellyfin.Plugin.Lastfm
 
 ## Version Management
 
+### Version Scheme
+**Format**: `{jellyfin_major}.{jellyfin_minor}.{jellyfin_patch}-{plugin_revision}`
+
+Examples:
+- `10.11.6-0` - Initial release for Jellyfin 10.11.6
+- `10.11.6-1` - Bugfix release for Jellyfin 10.11.6
+- `10.12.0-0` - Initial release for Jellyfin 10.12.0
+
 ### Assembly Version (Jellyfin.Plugin.Lastfm.csproj)
 ```xml
 <PropertyGroup>
-    <Version>10.1.0.0</Version>
+    <Version>10.11.6-0</Version>
     <TargetFramework>net9.0</TargetFramework>
-    <AssemblyVersion>10.1.0.0</AssemblyVersion>
+    <AssemblyVersion>10.11.6.0</AssemblyVersion>
 </PropertyGroup>
 ```
 
 ### Plugin Metadata (build.yaml)
 ```yaml
-version: 10.1.0.0              # Plugin version
+version: 10.11.6-0             # Plugin version (matches Jellyfin + revision)
 targetAbi: 10.11.6.0           # Jellyfin ABI target
 ```
 
 ### Release Tagging
 ```bash
-git tag -a v10.1.0 -m "Release v10.1.0"
-git push origin v10.1.0
+git tag -a 10.11.6-0 -m "Release 10.11.6-0"
+git push origin 10.11.6-0
 ```
 
-**Tag Format**: `v{major}.{minor}.{patch}` (e.g., `v10.1.0`)
+**Tag Format**: `{jellyfin_version}-{revision}` (e.g., `10.11.6-0`, `10.11.6-1`)
 
 ---
 
@@ -49,16 +57,15 @@ git push origin v10.1.0
 
 ### Trigger: Tag Push
 ```bash
-git tag -a v10.1.1 && git push origin v10.1.1
+git tag -a 10.11.6-1 && git push origin 10.11.6-1
 ```
 
 ### Automatic Steps:
 1. Workflow `create-github-release.yml` triggers
 2. Builds release: `dotnet build -c Release`
-3. Creates ZIP: `lastfm_v10.1.1.zip`
+3. Creates ZIP: `lastfm_10.11.6-1.zip`
 4. Updates manifest: `manifest.json` with new version
 5. Creates GitHub Release with ZIP
-6. Optional: Uploads to Azure blob storage
 
 ### Manual Alternative:
 ```bash
@@ -67,7 +74,7 @@ dotnet build Jellyfin.Plugin.Lastfm -c Release
 
 # Create ZIP from bin/Release/net9.0/
 cd Jellyfin.Plugin.Lastfm/bin/Release/net9.0
-zip -r ../../lastfm_v10.1.1.zip .
+zip -j ../../../lastfm_10.11.6-0.zip Jellyfin.Plugin.Lastfm.dll
 ```
 
 ---
