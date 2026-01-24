@@ -12,8 +12,8 @@
         "changelog": "Jellyfin LastFM build v10.1.0.0 - Jellyfin 10.11.6 compatible",
         "targetAbi": "10.11.6.0",
         "sourceUrl": "https://github.com/lusoris/jellyfin-plugin-lastfm/releases/download/v10.1.0/lastfm_v10.1.0.zip",
-        "checksum": "e6153c27d38fff15d8618bcdbc758a69",
-        "timestamp": "2026-01-24T23:39:00Z"
+        "checksum": "1fb5bb29e11aa7a29538d80de2f5e7e8",
+        "timestamp": "2026-01-25T00:00:00Z"
       },
       {
         "version": "10.0.0.0",
