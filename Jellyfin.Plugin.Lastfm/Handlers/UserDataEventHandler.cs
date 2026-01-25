@@ -3,7 +3,10 @@
 
 namespace Jellyfin.Plugin.Lastfm.Handlers;
 
+using Configuration;
+using MediaBrowser.Controller.Entities.Audio;
 using MediaBrowser.Controller.Library;
+using MediaBrowser.Model.Entities;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Services;
@@ -51,8 +54,79 @@ public class UserDataEventHandler : IHostedService, IDisposable
 
     private async void OnUserDataSaved(object? sender, UserDataSaveEventArgs e)
     {
-        // TODO: Implement love/unlove sync when IsFavorite changes
-        // Note: async void is correct for event handlers
+        try
+        {
+            // Only handle audio items
+            if (e.Item is not Audio audio)
+            {
+                return;
+            }
+
+            // Only handle favorite changes
+            if (e.SaveReason != UserDataSaveReason.UpdateUserRating &&
+                e.SaveReason != UserDataSaveReason.TogglePlayed)
+            {
+                return;
+            }
+
+            var config = Plugin.Instance?.Configuration;
+            if (config == null || !config.IsConfigured)
+            {
+                return;
+            }
+
+            var userConfig = config.GetUserConfig(e.UserId);
+            if (userConfig == null || !userConfig.HasValidSession)
+            {
+                return;
+            }
+
+            var isFavorite = e.UserData.IsFavorite;
+
+            // Check if sync is enabled for this direction
+            if (isFavorite && !userConfig.Options.SyncFavoritesToLoved)
+            {
+                return;
+            }
+
+            if (!isFavorite && !userConfig.Options.SyncUnfavoritesToUnloved)
+            {
+                return;
+            }
+
+            // Get artist and track name
+            var artist = audio.Artists.FirstOrDefault();
+            if (string.IsNullOrEmpty(artist) || string.IsNullOrEmpty(audio.Name))
+            {
+                _logger.LogDebug("Cannot sync favorite: missing artist or track name");
+                return;
+            }
+
+            if (isFavorite)
+            {
+                _logger.LogInformation(
+                    "Syncing favorite to Last.fm loved: {Artist} - {Track} for {User}",
+                    artist,
+                    audio.Name,
+                    userConfig.Username);
+
+                await _apiClient.LoveTrackAsync(artist, audio.Name, userConfig.SessionKey).ConfigureAwait(false);
+            }
+            else
+            {
+                _logger.LogInformation(
+                    "Syncing unfavorite to Last.fm unloved: {Artist} - {Track} for {User}",
+                    artist,
+                    audio.Name,
+                    userConfig.Username);
+
+                await _apiClient.UnloveTrackAsync(artist, audio.Name, userConfig.SessionKey).ConfigureAwait(false);
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error handling user data saved event");
+        }
     }
 
     /// <inheritdoc />
