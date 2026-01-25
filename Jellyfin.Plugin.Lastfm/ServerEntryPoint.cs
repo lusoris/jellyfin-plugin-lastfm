@@ -63,52 +63,52 @@ namespace Jellyfin.Plugin.Lastfm
                 if (e.Item is not Audio)
                     return;
 
-            var lastfmUser = Utils.UserHelpers.GetUser(e.UserId);
-            if (lastfmUser == null)
-            {
-                _logger.LogDebug("Could not find user");
-                return;
-            }
-
-            if (string.IsNullOrWhiteSpace(lastfmUser.SessionKey))
-            {
-                _logger.LogInformation("No session key present, aborting");
-                return;
-            }
-
-            var item = e.Item as Audio;
-
-            // Dont do if syncing
-            if (Plugin.Syncing)
-                return;
-
-            if (e.SaveReason.Equals(UserDataSaveReason.UpdateUserRating))
-            {
-                if (!lastfmUser.Options.SyncFavourites)
+                var lastfmUser = Utils.UserHelpers.GetUser(e.UserId);
+                if (lastfmUser == null)
                 {
-                    _logger.LogDebug("{0} does not want to sync liked songs", lastfmUser.Username);
+                    _logger.LogDebug("Could not find user");
                     return;
                 }
-                await _apiClient.LoveTrack(item, lastfmUser, e.UserData.IsFavorite).ConfigureAwait(false);
-            }
 
-            if (e.SaveReason.Equals(UserDataSaveReason.PlaybackFinished))
-            {
-                if (!lastfmUser.Options.Scrobble)
+                if (string.IsNullOrWhiteSpace(lastfmUser.SessionKey))
                 {
-                    _logger.LogDebug("{0} does not want to scrobble", lastfmUser.Username);
+                    _logger.LogInformation("No session key present, aborting");
                     return;
                 }
-                if (!lastfmUser.Options.AlternativeMode)
-                {
-                    _logger.LogDebug("{0} does not use AlternativeMode", lastfmUser.Username);
+
+                var item = e.Item as Audio;
+
+                // Dont do if syncing
+                if (Plugin.Syncing)
                     return;
-                }
-                if (string.IsNullOrWhiteSpace(item.Artists.FirstOrDefault()) || string.IsNullOrWhiteSpace(item.Name))
+
+                if (e.SaveReason.Equals(UserDataSaveReason.UpdateUserRating))
                 {
-                    _logger.LogInformation("track {0} is missing  artist ({1}) or track name ({2}) metadata. Not submitting", item.Path, item.Artists.FirstOrDefault(), item.Name);
-                    return;
+                    if (!lastfmUser.Options.SyncFavourites)
+                    {
+                        _logger.LogDebug("{0} does not want to sync liked songs", lastfmUser.Username);
+                        return;
+                    }
+                    await _apiClient.LoveTrack(item, lastfmUser, e.UserData.IsFavorite).ConfigureAwait(false);
                 }
+
+                if (e.SaveReason.Equals(UserDataSaveReason.PlaybackFinished))
+                {
+                    if (!lastfmUser.Options.Scrobble)
+                    {
+                        _logger.LogDebug("{0} does not want to scrobble", lastfmUser.Username);
+                        return;
+                    }
+                    if (!lastfmUser.Options.AlternativeMode)
+                    {
+                        _logger.LogDebug("{0} does not use AlternativeMode", lastfmUser.Username);
+                        return;
+                    }
+                    if (string.IsNullOrWhiteSpace(item.Artists.FirstOrDefault()) || string.IsNullOrWhiteSpace(item.Name))
+                    {
+                        _logger.LogInformation("track {0} is missing  artist ({1}) or track name ({2}) metadata. Not submitting", item.Path, item.Artists.FirstOrDefault(), item.Name);
+                        return;
+                    }
                     await _apiClient.Scrobble(item, lastfmUser).ConfigureAwait(false);
                 }
             }
@@ -131,63 +131,63 @@ namespace Jellyfin.Plugin.Lastfm
                 if (e.Item is not Audio)
                     return;
 
-            var item = e.Item as Audio;
+                var item = e.Item as Audio;
 
-            if (e.PlaybackPositionTicks == null)
-            {
-                _logger.LogDebug("Playback ticks for {0} is null", item.Name);
-                return;
-            }
+                if (e.PlaybackPositionTicks == null)
+                {
+                    _logger.LogDebug("Playback ticks for {0} is null", item.Name);
+                    return;
+                }
 
-            // Required checkpoints before scrobbling noted at https://www.last.fm/api/scrobbling#when-is-a-scrobble-a-scrobble .
-            // A track should only be scrobbled when the following conditions have been met:
-            //   * The track must be longer than 30 seconds.
-            //   * And the track has been played for at least half its duration, or for 4 minutes (whichever occurs earlier.)
-            // is the track length greater than 30 seconds.
-            if (item.RunTimeTicks < minimumSongLengthToScrobbleInTicks)
-            {
-                _logger.LogDebug("{0} - played {1} ticks which is less minimumSongLengthToScrobbleInTicks ({2}), won't scrobble.", item.Name, item.RunTimeTicks, minimumSongLengthToScrobbleInTicks);
-                return;
-            }
+                // Required checkpoints before scrobbling noted at https://www.last.fm/api/scrobbling#when-is-a-scrobble-a-scrobble .
+                // A track should only be scrobbled when the following conditions have been met:
+                //   * The track must be longer than 30 seconds.
+                //   * And the track has been played for at least half its duration, or for 4 minutes (whichever occurs earlier.)
+                // is the track length greater than 30 seconds.
+                if (item.RunTimeTicks < minimumSongLengthToScrobbleInTicks)
+                {
+                    _logger.LogDebug("{0} - played {1} ticks which is less minimumSongLengthToScrobbleInTicks ({2}), won't scrobble.", item.Name, item.RunTimeTicks, minimumSongLengthToScrobbleInTicks);
+                    return;
+                }
 
-            // the track must have played the minimum percentage (minimumPlayPercentage = 50%) or played for at least 4 minutes (minimumPlayTimeToScrobbleInTicks).
-            var playPercent = ((double)e.PlaybackPositionTicks / item.RunTimeTicks) * 100;
-            if (playPercent < minimumPlayPercentage && e.PlaybackPositionTicks < minimumPlayTimeToScrobbleInTicks)
-            {
-                _logger.LogDebug("{0} - played {1}%, Last.Fm requires minplayed={2}% . played {3} ticks of minimumPlayTimeToScrobbleInTicks ({4}), won't scrobble", item.Name, playPercent, minimumPlayPercentage, e.PlaybackPositionTicks, minimumPlayTimeToScrobbleInTicks);
-                return;
-            }
+                // the track must have played the minimum percentage (minimumPlayPercentage = 50%) or played for at least 4 minutes (minimumPlayTimeToScrobbleInTicks).
+                var playPercent = ((double)e.PlaybackPositionTicks / item.RunTimeTicks) * 100;
+                if (playPercent < minimumPlayPercentage && e.PlaybackPositionTicks < minimumPlayTimeToScrobbleInTicks)
+                {
+                    _logger.LogDebug("{0} - played {1}%, Last.Fm requires minplayed={2}% . played {3} ticks of minimumPlayTimeToScrobbleInTicks ({4}), won't scrobble", item.Name, playPercent, minimumPlayPercentage, e.PlaybackPositionTicks, minimumPlayTimeToScrobbleInTicks);
+                    return;
+                }
 
-            var user = e.Users.FirstOrDefault();
-            if (user == null)
-            {
-                return;
-            }
+                var user = e.Users.FirstOrDefault();
+                if (user == null)
+                {
+                    return;
+                }
 
-            var lastfmUser = Utils.UserHelpers.GetUser(user);
-            if (lastfmUser == null)
-            {
-                _logger.LogDebug("Could not find last.fm user");
-                return;
-            }
+                var lastfmUser = Utils.UserHelpers.GetUser(user);
+                if (lastfmUser == null)
+                {
+                    _logger.LogDebug("Could not find last.fm user");
+                    return;
+                }
 
-            // User doesn't want to scrobble
-            if (!lastfmUser.Options.Scrobble)
-            {
-                _logger.LogDebug("{0} ({1}) does not want to scrobble", user.Username, lastfmUser.Username);
-                return;
-            }
-            if (lastfmUser.Options.AlternativeMode)
-            {
-                _logger.LogDebug("{0} uses AlternativeMode", lastfmUser.Username);
-                return;
-            }
+                // User doesn't want to scrobble
+                if (!lastfmUser.Options.Scrobble)
+                {
+                    _logger.LogDebug("{0} ({1}) does not want to scrobble", user.Username, lastfmUser.Username);
+                    return;
+                }
+                if (lastfmUser.Options.AlternativeMode)
+                {
+                    _logger.LogDebug("{0} uses AlternativeMode", lastfmUser.Username);
+                    return;
+                }
 
-            if (string.IsNullOrWhiteSpace(lastfmUser.SessionKey))
-            {
-                _logger.LogInformation("No session key present, aborting");
-                return;
-            }
+                if (string.IsNullOrWhiteSpace(lastfmUser.SessionKey))
+                {
+                    _logger.LogInformation("No session key present, aborting");
+                    return;
+                }
 
                 if (string.IsNullOrWhiteSpace(item.Artists.FirstOrDefault()) || string.IsNullOrWhiteSpace(item.Name))
                 {
@@ -214,30 +214,30 @@ namespace Jellyfin.Plugin.Lastfm
                     return;
 
                 var user = e.Users.FirstOrDefault();
-            if (user == null)
-            {
-                return;
-            }
+                if (user == null)
+                {
+                    return;
+                }
 
-            var lastfmUser = Utils.UserHelpers.GetUser(user);
-            if (lastfmUser == null)
-            {
-                _logger.LogDebug("Could not find last.fm user");
-                return;
-            }
+                var lastfmUser = Utils.UserHelpers.GetUser(user);
+                if (lastfmUser == null)
+                {
+                    _logger.LogDebug("Could not find last.fm user");
+                    return;
+                }
 
-            // User doesn't want to scrobble
-            if (!lastfmUser.Options.Scrobble)
-            {
-                _logger.LogDebug("{0} ({1}) does not want to scrobble", user.Username, lastfmUser.Username);
-                return;
-            }
+                // User doesn't want to scrobble
+                if (!lastfmUser.Options.Scrobble)
+                {
+                    _logger.LogDebug("{0} ({1}) does not want to scrobble", user.Username, lastfmUser.Username);
+                    return;
+                }
 
-            if (string.IsNullOrWhiteSpace(lastfmUser.SessionKey))
-            {
-                _logger.LogInformation("No session key present, aborting");
-                return;
-            }
+                if (string.IsNullOrWhiteSpace(lastfmUser.SessionKey))
+                {
+                    _logger.LogInformation("No session key present, aborting");
+                    return;
+                }
 
                 var item = e.Item as Audio;
                 if (string.IsNullOrWhiteSpace(item.Artists.FirstOrDefault()) || string.IsNullOrWhiteSpace(item.Name))
