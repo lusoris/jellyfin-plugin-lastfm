@@ -1,5 +1,7 @@
 # Development Workflow & Building
 
+> **Prerequisites**: See [ide-setup.md](ide-setup.md) for IDE configuration.
+
 ## Building the Project
 
 ```bash

@@ -1,5 +1,61 @@
 # C# Patterns & Best Practices
 
+## Class Design
+
+```csharp
+// ✅ ALWAYS seal non-inheritable classes (performance + clarity)
+public sealed class ScrobbleService : IDisposable
+{
+    // Sealed classes enable devirtualization optimizations
+}
+
+// ✅ ALWAYS implement IDisposable for services with subscriptions
+public sealed class PlaybackHandler : IDisposable
+{
+    private bool _disposed;
+    
+    public void Dispose()
+    {
+        if (_disposed) return;
+        _disposed = true;
+        // Unsubscribe from events, release resources
+    }
+}
+```
+
+---
+
+## LoggerMessage Source Generators (Performance)
+
+```csharp
+// ✅ Use [LoggerMessage] for high-performance logging (zero allocations)
+public sealed partial class ScrobbleService
+{
+    [LoggerMessage(Level = LogLevel.Information, Message = "Scrobbling {TrackName} by {Artist}")]
+    private partial void LogScrobble(string trackName, string artist);
+    
+    [LoggerMessage(Level = LogLevel.Warning, Message = "Rate limit approaching: {Current}/{Max}")]
+    private partial void LogRateLimitWarning(int current, int max);
+    
+    [LoggerMessage(Level = LogLevel.Error, Message = "Scrobble failed for user {Username}")]
+    private partial void LogScrobbleError(Exception ex, string username);
+}
+
+// Usage (zero allocations, compile-time validation):
+LogScrobble(track.Name, track.Artist);
+LogScrobbleError(ex, user.Username);
+
+// ❌ AVOID: String interpolation in hot paths (allocates)
+_logger.LogInformation($"Scrobbling {track.Name}");  // Allocates string every call
+```
+
+**Requirements:**
+- Class must be `partial`
+- Method must be `partial`
+- `Level` and `Message` are required
+
+---
+
 ## Async/Await
 
 ```csharp
@@ -17,11 +73,65 @@ public async Task DoWork(CancellationToken cancellationToken)
     await Task.Delay(100, cancellationToken);
 }
 
+// ✅ CORRECT: ValueTask for potentially-sync paths
+public ValueTask<bool> TryGetCached(string key, out string? value)
+{
+    if (_cache.TryGetValue(key, out value))
+        return ValueTask.FromResult(true);
+    return new ValueTask<bool>(FetchAsync(key));
+}
+
 // ❌ WRONG: Task.Result causes deadlocks
 var result = _apiClient.Scrobble(...).Result;
 
 // ❌ WRONG: Direct HttpClient (doesn't pool)
 var client = new HttpClient();
+```
+
+---
+
+## Memory & Performance Patterns
+
+```csharp
+// ✅ Use Span<T> for stack-allocated buffers
+Span<byte> buffer = stackalloc byte[256];
+var bytesWritten = Encoding.UTF8.GetBytes(input, buffer);
+
+// ✅ Use ArrayPool for large temporary buffers
+var pool = ArrayPool<byte>.Shared;
+var buffer = pool.Rent(4096);
+try
+{
+    // Use buffer
+}
+finally
+{
+    pool.Return(buffer);
+}
+
+// ✅ Use string.Create for efficient string building
+var result = string.Create(length, state, (span, s) =>
+{
+    // Write directly to span
+});
+
+// ✅ Prefer ReadOnlySpan<char> for string operations
+public bool StartsWithIgnoreCase(ReadOnlySpan<char> value, ReadOnlySpan<char> prefix)
+    => value.StartsWith(prefix, StringComparison.OrdinalIgnoreCase);
+
+// ✅ Convert hex efficiently (.NET 5+)
+var hexLower = Convert.ToHexStringLower(bytes);  // Last.fm requires lowercase!
+
+// ❌ AVOID: Repeated string concatenation
+string result = "";
+foreach (var item in items)
+    result += item;  // O(n²) allocations
+
+// ✅ Use StringBuilder for multiple concatenations
+var sb = new StringBuilder();
+foreach (var item in items)
+    sb.Append(item);
+var result = sb.ToString();
 ```
 
 ---
@@ -38,8 +148,19 @@ lastfmUser.SessionKey ??= GetNewSessionKey();
 // Pattern matching with negation
 if (e.Item is not Audio) return;
 
-// Safe cast
-var audio = e.Item as Audio;
+// Pattern matching with extraction
+if (e.Item is Audio audio && audio.RunTimeTicks is { } ticks)
+{
+    var seconds = ticks / TimeSpan.TicksPerSecond;
+}
+
+// Switch expression
+var level = errorCount switch
+{
+    0 => LogLevel.Information,
+    < 5 => LogLevel.Warning,
+    _ => LogLevel.Error
+};
 
 // Null-conditional with coalescing
 var duration = item.RunTimeTicks?.ToString() ?? "0";
@@ -50,32 +171,34 @@ var duration = item.RunTimeTicks?.ToString() ?? "0";
 ## LINQ & Collections
 
 ```csharp
-// Filtering with multiple conditions
-var users = _userManager.GetUsers()
-    .Where(u => u.Policy.IsAdministrator)
-    .Where(u => !u.HasPassword)
-    .ToList();
+// ✅ Use specific collection types when size is known
+var list = new List<string>(capacity: 10);
 
-// FirstOrDefault with fallback
-var firstSong = item.Artists.FirstOrDefault() ?? "Unknown";
-
-// Any() for existence checks
-if (config.LastfmUsers.Any(u => u.MediaBrowserUserId == userId))
+// ✅ Avoid LINQ in hot paths (allocates enumerators)
+// For small collections, use foreach instead:
+foreach (var user in users)
 {
-    // User has config
+    if (user.IsEnabled)
+        ProcessUser(user);
 }
 
-// Select + Where chains
+// ✅ Use Array.Find for simple searches
+var user = Array.Find(users, u => u.Id == targetId);
+
+// ✅ For larger datasets, LINQ is fine
 var configuredUsers = config.LastfmUsers
     .Where(u => u.Options.Scrobble)
     .Select(u => u.MediaBrowserUserId)
     .ToList();
 
-// GroupBy for organization
-var groupedByArtist = songs
-    .GroupBy(s => s.Artist)
-    .Select(g => new { Artist = g.Key, Count = g.Count() })
-    .ToList();
+// ✅ Any() for existence checks (more efficient than Count() > 0)
+if (config.LastfmUsers.Any(u => u.MediaBrowserUserId == userId))
+{
+    // User has config
+}
+
+// ✅ FirstOrDefault with fallback
+var firstSong = item.Artists.FirstOrDefault() ?? "Unknown";
 ```
 
 ---
@@ -83,30 +206,44 @@ var groupedByArtist = songs
 ## String Handling
 
 ```csharp
-// String interpolation (preferred)
-_logger.LogInformation("Scrobbling {0} by {1}", item.Name, artist);
-_logger.LogInformation($"Scrobbling {item.Name} by {artist}");
+// ✅ String interpolation (preferred for readability)
+var message = $"Scrobbling {item.Name} by {artist}";
 
-// String concatenation (when needed)
-var fullName = string.Concat(item.Artists.Select(a => $"{a}, "));
+// ✅ Use StringComparison for case-insensitive comparisons
+if (artist.Equals(other, StringComparison.OrdinalIgnoreCase))
 
-// null-safe string operations
+// ✅ Use string.IsNullOrEmpty / IsNullOrWhiteSpace
+if (string.IsNullOrWhiteSpace(artist))
+    return;
+
+// ✅ null-safe string operations
 var trimmed = artist?.Trim() ?? string.Empty;
+
+// ✅ String.Join for collections
+var artists = string.Join(", ", item.Artists);
 ```
 
 ---
 
-## Logging
+## Logging Best Practices
 
 ```csharp
-_logger.LogDebug("Debug info: {0}", detailVar);           // Verbose
-_logger.LogInformation("Starting scrobble");               // Normal
-_logger.LogWarning("Rate limit approaching");              // Warning
-_logger.LogError(ex, "Scrobble failed: {0}", user);       // Error
+// ✅ Structured logging with placeholders (not string interpolation)
+_logger.LogInformation("Scrobbling {TrackName} by {Artist}", item.Name, artist);
 
-// Don't log sensitive data
-_logger.LogInformation("User {0} configured", user.Username);  // ✅
-_logger.LogDebug("Session key: {0}", sessionKey);              // ❌
+// ✅ Use LoggerMessage for hot paths (see above)
+
+// ✅ Include exception as first parameter
+_logger.LogError(ex, "Scrobble failed for {User}", user.Username);
+
+// ✅ Use appropriate log levels
+_logger.LogDebug("...");        // Verbose debugging
+_logger.LogInformation("...");  // Normal operation
+_logger.LogWarning("...");      // Recoverable issues
+_logger.LogError(ex, "...");    // Failures
+
+// ❌ NEVER log sensitive data
+_logger.LogDebug("Session key: {Key}", sessionKey);  // DON'T!
 ```
 
 ---
@@ -114,24 +251,24 @@ _logger.LogDebug("Session key: {0}", sessionKey);              // ❌
 ## Dictionary & Collections
 
 ```csharp
-// Dictionary initialization
+// ✅ Dictionary initialization
 var dict = new Dictionary<string, string>
 {
-    { "key1", "value1" },
-    { "key2", "value2" }
+    ["key1"] = "value1",  // Indexer syntax (preferred)
+    ["key2"] = "value2"
 };
 
-// Safe dictionary operations
+// ✅ TryGetValue pattern (single lookup)
 if (dict.TryGetValue("key", out var value))
 {
     // Use value
 }
 
-// Null-coalescing for missing keys
-var val = dict.ContainsKey("key") ? dict["key"] : null;
+// ✅ GetValueOrDefault for nullable fallback
+var val = dict.GetValueOrDefault("key");
 
-// Remove items safely
-dict.Remove("key");
+// ✅ TryAdd for conditional insertion
+dict.TryAdd("key", "value");  // Returns false if exists
 ```
 
 ---
@@ -139,7 +276,7 @@ dict.Remove("key");
 ## Exception Handling
 
 ```csharp
-// Catch specific exceptions
+// ✅ Catch specific exceptions
 try
 {
     var result = await _apiClient.Scrobble(item, user).ConfigureAwait(false);
@@ -147,7 +284,7 @@ try
 catch (HttpRequestException ex)
 {
     _logger.LogWarning(ex, "Network error");
-    // Network issue - don't propagate, continue
+    // Network issue - queue for retry
 }
 catch (JsonException ex)
 {
@@ -155,7 +292,7 @@ catch (JsonException ex)
     // API response malformed - skip this request
 }
 
-// Async void handlers need try-catch
+// ✅ Async void handlers MUST have try-catch
 private async void PlaybackStopped(object sender, PlaybackStopEventArgs e)
 {
     try
@@ -165,47 +302,71 @@ private async void PlaybackStopped(object sender, PlaybackStopEventArgs e)
     catch (Exception ex)
     {
         _logger.LogError(ex, "Unhandled exception in PlaybackStopped");
-        // ConfigureAwait(false) will log exceptions
     }
 }
 ```
 
 ---
 
-## using Statements
+## using Statements & Disposal
 
 ```csharp
-// Traditional using
-using (var response = await client.GetAsync(url))
-{
-    var content = await response.Content.ReadAsStringAsync();
-}
-
-// Modern using (C# 8+)
+// ✅ Modern using declaration (C# 8+)
 using var response = await client.GetAsync(url);
 var content = await response.Content.ReadAsStringAsync();
+// Disposed at end of scope
+
+// ✅ IAsyncDisposable for async cleanup
+await using var stream = await OpenAsync();
+
+// ✅ Dispose pattern for unmanaged resources
+public sealed class MyService : IDisposable
+{
+    private bool _disposed;
+    
+    public void Dispose()
+    {
+        if (_disposed) return;
+        _disposed = true;
+        
+        // Clean up managed resources
+        _subscription?.Dispose();
+        // Unsubscribe from events
+        _sessionManager.PlaybackStopped -= OnPlaybackStopped;
+    }
+}
 ```
 
 ---
 
-## Delegates & Actions
+## Event Handlers
 
 ```csharp
-// Event handler (async void is correct here)
+// ✅ async void is CORRECT for event handlers
 private async void OnPlaybackStopped(object sender, EventArgs e)
 {
-    await Task.Delay(100).ConfigureAwait(false);
+    try
+    {
+        await ProcessAsync().ConfigureAwait(false);
+    }
+    catch (Exception ex)
+    {
+        _logger.LogError(ex, "Handler error");
+    }
 }
 
-// Subscribe/unsubscribe
-_sessionManager.PlaybackStopped += OnPlaybackStopped;
-_sessionManager.PlaybackStopped -= OnPlaybackStopped;
-
-// Func/Action for callbacks
-Func<string, Task<bool>> validator = async (name) =>
+// ✅ Subscribe in StartAsync, unsubscribe in StopAsync/Dispose
+public Task StartAsync(CancellationToken ct)
 {
-    return await IsValidName(name);
-};
+    _sessionManager.PlaybackStopped += OnPlaybackStopped;
+    return Task.CompletedTask;
+}
+
+public Task StopAsync(CancellationToken ct)
+{
+    _sessionManager.PlaybackStopped -= OnPlaybackStopped;
+    return Task.CompletedTask;
+}
 ```
 
 ---
@@ -213,3 +374,4 @@ Func<string, Task<bool>> validator = async (name) =>
 **Related**:
 - [csharp-security.md](csharp-security.md) - Security patterns
 - [development-workflow.md](development-workflow.md) - Build & testing
+- [ide-setup.md](ide-setup.md) - Development environment
