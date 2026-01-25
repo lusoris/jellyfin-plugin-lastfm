@@ -28,6 +28,15 @@ jobs:
       - name: Check formatting
         run: dotnet format --verify-no-changes --verbosity diagnostic
 
+  lint-ai-slop:
+    name: Check for AI Slop
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run AI Slop Detector
+        run: bash .github/scripts/lint-ai-slop.sh
+
   build:
     name: Build Plugin
     needs: [lint]
@@ -40,16 +49,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Checkout manifest build scripts repo
-        uses: actions/checkout@v4
-        with:
-          repository: lusoris/jellyfin-utilities
-          path: manifest-tools
-
-      - name: Setup .NET
-        uses: actions/setup-dotnet@v4
-        with:
-          dotnet-version: '9.0.x'
 
       - name: Setup Python
         uses: actions/setup-python@v5
@@ -81,11 +80,11 @@ jobs:
       - name: Generate test manifest
         run: |
           # Calculate checksum of dev build
-          CK=$(python manifest-tools/md5/md5.py -f "lastfm_dev-build.zip")
+          CK=$(python .github/tools/md5.py -f "lastfm_dev-build.zip")
           echo "Checksum: $CK"
 
           # Create a fresh test manifest
-          python manifest-tools/manifest-generator/manifest.py \
+          python .github/tools/manifest.py \
             -f test-manifest.json \
             -app "Last.fm" \
             -create \
@@ -97,7 +96,7 @@ jobs:
             -cat "General"
 
           # Add a test version entry
-          python manifest-tools/manifest-generator/manifest.py \
+          python .github/tools/manifest.py \
             -f test-manifest.json \
             -app "Last.fm" \
             version \

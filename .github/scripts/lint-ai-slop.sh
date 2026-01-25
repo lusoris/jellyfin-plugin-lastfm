@@ -232,7 +232,7 @@ CODE_SLOP_FIXES["\bdynamic\b"]="Generics oder spezifischer Typ"
 CODE_SLOP_PATTERNS["new\s+List<[^>]+>\(\)"]="new List<T>() - use [] (C# 12)"
 CODE_SLOP_FIXES["new\s+List<[^>]+>\(\)"]="List<T> list = [];"
 
-CODE_SLOP_PATTERNS["new\s+Dictionary<[^>]+>\(\)"]="new Dictionary<K,V>() - use [] (C# 12)"  
+CODE_SLOP_PATTERNS["new\s+Dictionary<[^>]+>\(\)"]="new Dictionary<K,V>() - use [] (C# 12)"
 CODE_SLOP_FIXES["new\s+Dictionary<[^>]+>\(\)"]="Dictionary<K,V> dict = [];"
 
 CODE_SLOP_PATTERNS["Array\.Empty<"]="Array.Empty<T>() - use [] (C# 12)"
@@ -350,7 +350,7 @@ for pattern in "${!CODE_SLOP_PATTERNS[@]}"; do
     fix="${CODE_SLOP_FIXES[$pattern]}"
 
     matches=$(grep -rniE "$pattern" $CS_FILES 2>/dev/null || true)
-    
+
     # Filter out false positives (comments containing keywords like "dynamic")
     if [[ "$pattern" == *"dynamic"* ]]; then
         matches=$(echo "$matches" | grep -v "///" | grep -v "/\*" || true)
@@ -386,7 +386,7 @@ else
     echo "  Code:  .ToList().Count() → .Count()"
     echo "         .Result / .Wait() → await"
     echo "         catch {} → catch { log error }"
-    
+
     if [ $WARN_ONLY -eq 1 ]; then
         echo ""
         echo -e "${GRAY}(--warn mode: exiting with 0)${NC}"

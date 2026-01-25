@@ -49,7 +49,7 @@ def load_build_yaml(path: Path) -> dict:
     if not HAS_YAML:
         print("Error: PyYAML not installed. Run: pip install pyyaml", file=sys.stderr)
         sys.exit(1)
-    
+
     with open(path, 'r', encoding='utf-8') as f:
         return yaml.safe_load(f)
 
@@ -106,15 +106,15 @@ def cmd_version(args):
     """Add a new version to the manifest."""
     manifest_path = Path(args.file)
     manifest = load_manifest(manifest_path)
-    
+
     # Find or create plugin entry
     idx, plugin = find_plugin_in_manifest(manifest, args.app)
-    
+
     if plugin is None:
         print(f"Error: Plugin '{args.app}' not found in manifest.", file=sys.stderr)
         print("Use 'create' command first or check the app name.", file=sys.stderr)
         sys.exit(1)
-    
+
     # Create version entry
     version_entry = create_version_entry(
         version=args.ver,
@@ -124,7 +124,7 @@ def cmd_version(args):
         checksum=args.ck,
         timestamp=args.timestamp
     )
-    
+
     # Check if version already exists
     existing_versions = {v.get('version') for v in plugin.get('versions', [])}
     if args.ver in existing_versions:
@@ -135,14 +135,14 @@ def cmd_version(args):
         else:
             print(f"Error: Version {args.ver} already exists. Use --force to replace.", file=sys.stderr)
             sys.exit(1)
-    
+
     # Add version (newest first)
     plugin.setdefault('versions', []).insert(0, version_entry)
-    
+
     # Update manifest
     manifest[idx] = plugin
     save_manifest(manifest_path, manifest)
-    
+
     print(f"Added version {args.ver} to {args.app}")
     print(f"  targetAbi: {args.abi}")
     print(f"  checksum:  {args.ck[:16]}...")
@@ -152,18 +152,18 @@ def cmd_create(args):
     """Create a new manifest or add plugin from build.yaml."""
     manifest_path = Path(args.file)
     manifest = load_manifest(manifest_path)
-    
+
     # Load build.yaml
     build_path = Path(args.from_build)
     if not build_path.exists():
         print(f"Error: {build_path} not found", file=sys.stderr)
         sys.exit(1)
-    
+
     build = load_build_yaml(build_path)
-    
+
     # Check if plugin already exists
     idx, existing = find_plugin_in_manifest(manifest, build['guid'])
-    
+
     plugin = create_plugin_entry(
         name=build['name'],
         guid=build['guid'],
@@ -172,7 +172,7 @@ def cmd_create(args):
         owner=build.get('owner', ''),
         category=build.get('category', 'General')
     )
-    
+
     if existing:
         # Keep existing versions
         plugin['versions'] = existing.get('versions', [])
@@ -181,28 +181,28 @@ def cmd_create(args):
     else:
         manifest.append(plugin)
         print(f"Created new plugin entry for {build['name']}")
-    
+
     save_manifest(manifest_path, manifest)
 
 
 def cmd_info(args):
     """Show manifest information."""
     manifest_path = Path(args.file)
-    
+
     if not manifest_path.exists():
         print(f"Manifest not found: {manifest_path}", file=sys.stderr)
         sys.exit(1)
-    
+
     manifest = load_manifest(manifest_path)
-    
+
     print(f"Manifest: {manifest_path}")
     print(f"Plugins:  {len(manifest)}")
     print()
-    
+
     for plugin in manifest:
         versions = plugin.get('versions', [])
         latest = versions[0] if versions else None
-        
+
         print(f"  {plugin.get('name')} ({plugin.get('guid')})")
         print(f"    Owner:    {plugin.get('owner')}")
         print(f"    Category: {plugin.get('category')}")
@@ -216,17 +216,17 @@ def cmd_remove_version(args):
     """Remove a version from the manifest."""
     manifest_path = Path(args.file)
     manifest = load_manifest(manifest_path)
-    
+
     idx, plugin = find_plugin_in_manifest(manifest, args.app)
-    
+
     if plugin is None:
         print(f"Error: Plugin '{args.app}' not found", file=sys.stderr)
         sys.exit(1)
-    
+
     versions_before = len(plugin.get('versions', []))
     plugin['versions'] = [v for v in plugin.get('versions', []) if v.get('version') != args.ver]
     versions_after = len(plugin['versions'])
-    
+
     if versions_before == versions_after:
         print(f"Warning: Version {args.ver} not found in {args.app}", file=sys.stderr)
     else:
@@ -241,9 +241,9 @@ def main():
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog=__doc__
     )
-    
+
     subparsers = parser.add_subparsers(dest='command', required=True)
-    
+
     # version command
     ver_parser = subparsers.add_parser('version', help='Add a new version')
     ver_parser.add_argument('-f', '--file', required=True, help='Path to manifest.json')
@@ -256,25 +256,25 @@ def main():
     ver_parser.add_argument('-timestamp', '--timestamp', help='Override timestamp (ISO format)')
     ver_parser.add_argument('--force', action='store_true', help='Replace existing version')
     ver_parser.set_defaults(func=cmd_version)
-    
+
     # create command
     create_parser = subparsers.add_parser('create', help='Create manifest from build.yaml')
     create_parser.add_argument('-f', '--file', required=True, help='Path to manifest.json')
     create_parser.add_argument('--from-build', required=True, help='Path to build.yaml')
     create_parser.set_defaults(func=cmd_create)
-    
+
     # info command
     info_parser = subparsers.add_parser('info', help='Show manifest info')
     info_parser.add_argument('-f', '--file', required=True, help='Path to manifest.json')
     info_parser.set_defaults(func=cmd_info)
-    
+
     # remove-version command
     rm_parser = subparsers.add_parser('remove-version', help='Remove a version')
     rm_parser.add_argument('-f', '--file', required=True, help='Path to manifest.json')
     rm_parser.add_argument('-app', '--app', required=True, help='Plugin name or GUID')
     rm_parser.add_argument('-ver', '--ver', required=True, help='Version to remove')
     rm_parser.set_defaults(func=cmd_remove_version)
-    
+
     args = parser.parse_args()
     args.func(args)
 
