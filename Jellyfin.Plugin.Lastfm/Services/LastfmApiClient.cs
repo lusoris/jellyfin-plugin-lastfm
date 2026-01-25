@@ -290,6 +290,37 @@ public class LastfmApiClient : ILastfmApiClient
         return response;
     }
 
+    /// <inheritdoc />
+    public async Task<TopTracksResponse?> GetTopTracksAsync(
+        string username,
+        string period = "overall",
+        int page = 1,
+        int limit = 1000,
+        CancellationToken cancellationToken = default)
+    {
+        _logger.LogDebug("Fetching top tracks for {Username}, period {Period}, page {Page}", username, period, page);
+
+        var url = $"{ApiBaseUrl}?method=user.getTopTracks" +
+                  $"&user={Uri.EscapeDataString(username)}" +
+                  $"&period={Uri.EscapeDataString(period)}" +
+                  $"&api_key={GetApiKey()}" +
+                  $"&page={page}" +
+                  $"&limit={limit}" +
+                  $"&format=json";
+
+        var response = await GetAsync<TopTracksResponse>(url, cancellationToken).ConfigureAwait(false);
+
+        if (response?.HasTracks == true)
+        {
+            _logger.LogDebug(
+                "Fetched {Count} top tracks for {Username}",
+                response.TopTracks?.Tracks?.Count ?? 0,
+                username);
+        }
+
+        return response;
+    }
+
     /// <summary>
     /// Sends a signed POST request to the Last.fm API.
     /// </summary>

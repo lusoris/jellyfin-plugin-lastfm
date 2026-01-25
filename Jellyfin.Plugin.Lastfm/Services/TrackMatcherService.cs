@@ -4,8 +4,11 @@
 namespace Jellyfin.Plugin.Lastfm.Services;
 
 using System.Text.RegularExpressions;
+using Jellyfin.Data.Enums;
+using MediaBrowser.Controller.Entities;
 using MediaBrowser.Controller.Entities.Audio;
 using MediaBrowser.Controller.Library;
+using MediaBrowser.Model.Entities;
 using Microsoft.Extensions.Logging;
 
 /// <summary>
@@ -28,10 +31,90 @@ public partial class TrackMatcherService : ITrackMatcherService
     /// <inheritdoc />
     public Task<Audio?> FindMatchingTrackAsync(string lastfmArtist, string lastfmTrack, string? lastfmMbid, Guid userId)
     {
-        // TODO: Implement track matching
-        // 1. Try MusicBrainz ID if available
-        // 2. Fall back to artist + track name fuzzy match
-        throw new NotImplementedException();
+        // Strategy 1: Try MusicBrainz ID if available
+        if (!string.IsNullOrEmpty(lastfmMbid))
+        {
+            var mbidMatch = FindByMusicBrainzId(lastfmMbid);
+            if (mbidMatch != null)
+            {
+                _logger.LogDebug("Found match by MusicBrainz ID: {Artist} - {Track}", lastfmArtist, lastfmTrack);
+                return Task.FromResult<Audio?>(mbidMatch);
+            }
+        }
+
+        // Strategy 2: Exact artist + track name match
+        var exactMatch = FindByExactName(lastfmArtist, lastfmTrack);
+        if (exactMatch != null)
+        {
+            _logger.LogDebug("Found exact match: {Artist} - {Track}", lastfmArtist, lastfmTrack);
+            return Task.FromResult<Audio?>(exactMatch);
+        }
+
+        // Strategy 3: Fuzzy artist + track name match
+        var fuzzyMatch = FindByFuzzyName(lastfmArtist, lastfmTrack);
+        if (fuzzyMatch != null)
+        {
+            _logger.LogDebug("Found fuzzy match: {Artist} - {Track} => {MatchArtist} - {MatchTrack}",
+                lastfmArtist, lastfmTrack, fuzzyMatch.Artists.FirstOrDefault(), fuzzyMatch.Name);
+            return Task.FromResult<Audio?>(fuzzyMatch);
+        }
+
+        _logger.LogDebug("No match found for: {Artist} - {Track}", lastfmArtist, lastfmTrack);
+        return Task.FromResult<Audio?>(null);
+    }
+
+    private Audio? FindByMusicBrainzId(string mbid)
+    {
+        var query = new InternalItemsQuery
+        {
+            IncludeItemTypes = [BaseItemKind.Audio],
+            Recursive = true,
+            Limit = 1
+        };
+
+        var items = _libraryManager.GetItemList(query);
+
+        return items
+            .OfType<Audio>()
+            .FirstOrDefault(a => string.Equals(
+                a.GetProviderId(MetadataProvider.MusicBrainzTrack),
+                mbid,
+                StringComparison.OrdinalIgnoreCase));
+    }
+
+    private Audio? FindByExactName(string artist, string track)
+    {
+        var query = new InternalItemsQuery
+        {
+            IncludeItemTypes = [BaseItemKind.Audio],
+            Recursive = true,
+            SearchTerm = track
+        };
+
+        var items = _libraryManager.GetItemList(query);
+
+        return items
+            .OfType<Audio>()
+            .FirstOrDefault(a =>
+                string.Equals(a.Name, track, StringComparison.OrdinalIgnoreCase) &&
+                a.Artists.Any(ar => string.Equals(ar, artist, StringComparison.OrdinalIgnoreCase)));
+    }
+
+    private Audio? FindByFuzzyName(string artist, string track)
+    {
+        var query = new InternalItemsQuery
+        {
+            IncludeItemTypes = [BaseItemKind.Audio],
+            Recursive = true
+        };
+
+        var items = _libraryManager.GetItemList(query);
+
+        return items
+            .OfType<Audio>()
+            .FirstOrDefault(a =>
+                IsLike(a.Name, track) &&
+                a.Artists.Any(ar => IsLike(ar, artist)));
     }
 
     /// <inheritdoc />

@@ -44,4 +44,14 @@ public interface ILastfmApiClient
     /// Gets a user's loved tracks.
     /// </summary>
     Task<LovedTracksResponse?> GetLovedTracksAsync(string username, int page = 1, int limit = 1000, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Gets a user's top tracks with play counts.
+    /// </summary>
+    /// <param name="username">Last.fm username.</param>
+    /// <param name="period">Time period: overall, 7day, 1month, 3month, 6month, 12month.</param>
+    /// <param name="page">Page number.</param>
+    /// <param name="limit">Results per page (max 1000).</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    Task<TopTracksResponse?> GetTopTracksAsync(string username, string period = "overall", int page = 1, int limit = 1000, CancellationToken cancellationToken = default);
 }
