@@ -84,7 +84,7 @@ public class PlaylistService : IPlaylistService
             .Take(5)
             .ToList();
 
-        var trackIds = new List<Guid>();
+        var trackIds = new HashSet<Guid>();
 
         foreach (var artistName in topArtists)
         {
@@ -110,7 +110,7 @@ public class PlaylistService : IPlaylistService
                 var localTracks = FindTracksByArtist(similarArtist.Name, userId);
                 foreach (var track in localTracks.Take(3))
                 {
-                    if (!trackIds.Contains(track.Id) && trackIds.Count < maxTracks)
+                    if (trackIds.Count < maxTracks)
                     {
                         trackIds.Add(track.Id);
                     }
@@ -124,7 +124,7 @@ public class PlaylistService : IPlaylistService
         }
 
         // Create the playlist
-        return await CreatePlaylistAsync(userId, playlistName, trackIds).ConfigureAwait(false);
+        return await CreatePlaylistAsync(userId, playlistName, trackIds.ToList()).ConfigureAwait(false);
     }
 
     /// <inheritdoc />
@@ -159,7 +159,7 @@ public class PlaylistService : IPlaylistService
             return PlaylistResult.FailureResult("No loved tracks found");
         }
 
-        var trackIds = new List<Guid>();
+        var trackIds = new HashSet<Guid>();
 
         // Get similar tracks for each loved track
         foreach (var lovedTrack in lovedTracksResponse.LovedTracks.Tracks.Take(10))
@@ -194,7 +194,7 @@ public class PlaylistService : IPlaylistService
                 }
 
                 var localTrack = FindTrack(similarTrack.Artist.Name, similarTrack.Name, userId);
-                if (localTrack != null && !trackIds.Contains(localTrack.Id) && trackIds.Count < maxTracks)
+                if (localTrack != null && trackIds.Count < maxTracks)
                 {
                     trackIds.Add(localTrack.Id);
                 }
@@ -206,7 +206,7 @@ public class PlaylistService : IPlaylistService
             return PlaylistResult.FailureResult("No matching tracks found in library");
         }
 
-        return await CreatePlaylistAsync(userId, playlistName, trackIds).ConfigureAwait(false);
+        return await CreatePlaylistAsync(userId, playlistName, trackIds.ToList()).ConfigureAwait(false);
     }
 
     /// <inheritdoc />
@@ -241,7 +241,7 @@ public class PlaylistService : IPlaylistService
             return PlaylistResult.FailureResult("No loved tracks found");
         }
 
-        var trackIds = new List<Guid>();
+        var trackIds = new HashSet<Guid>();
 
         // Find loved tracks that exist in library and haven't been played recently
         foreach (var lovedTrack in lovedTracksResponse.LovedTracks.Tracks)
@@ -272,10 +272,10 @@ public class PlaylistService : IPlaylistService
         }
 
         // Shuffle the tracks
-        var random = new Random();
-        trackIds = trackIds.OrderBy(_ => random.Next()).Take(maxTracks).ToList();
+        var random = Random.Shared;
+        var shuffledTracks = trackIds.OrderBy(_ => random.Next()).Take(maxTracks).ToList();
 
-        return await CreatePlaylistAsync(userId, playlistName, trackIds).ConfigureAwait(false);
+        return await CreatePlaylistAsync(userId, playlistName, shuffledTracks).ConfigureAwait(false);
     }
 
     /// <inheritdoc />
@@ -310,7 +310,7 @@ public class PlaylistService : IPlaylistService
             return PlaylistResult.FailureResult("No weekly listening data found");
         }
 
-        var trackIds = new List<Guid>();
+        var trackIds = new HashSet<Guid>();
         var recentArtists = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
         // First, add some tracks from this week
@@ -322,10 +322,12 @@ public class PlaylistService : IPlaylistService
             }
 
             var localTrack = FindTrack(chartTrack.Artist.Name, chartTrack.Name, userId);
-            if (localTrack != null && !trackIds.Contains(localTrack.Id))
+            if (localTrack != null)
             {
-                trackIds.Add(localTrack.Id);
-                recentArtists.Add(chartTrack.Artist.Name);
+                if (trackIds.Add(localTrack.Id))
+                {
+                    recentArtists.Add(chartTrack.Artist.Name);
+                }
             }
         }
 
@@ -352,7 +354,7 @@ public class PlaylistService : IPlaylistService
                 var localTracks = FindTracksByArtist(similarArtist.Name, userId);
                 foreach (var track in localTracks.Take(2))
                 {
-                    if (!trackIds.Contains(track.Id) && trackIds.Count < maxTracks)
+                    if (trackIds.Count < maxTracks)
                     {
                         trackIds.Add(track.Id);
                     }
@@ -366,10 +368,9 @@ public class PlaylistService : IPlaylistService
         }
 
         // Shuffle for variety
-        var random = new Random();
-        trackIds = trackIds.OrderBy(_ => random.Next()).ToList();
+        var shuffledTracks = trackIds.OrderBy(_ => Random.Shared.Next()).ToList();
 
-        return await CreatePlaylistAsync(userId, playlistName, trackIds).ConfigureAwait(false);
+        return await CreatePlaylistAsync(userId, playlistName, shuffledTracks).ConfigureAwait(false);
     }
 
     /// <inheritdoc />
@@ -404,7 +405,7 @@ public class PlaylistService : IPlaylistService
             return PlaylistResult.FailureResult("No tags found for user");
         }
 
-        var trackIds = new List<Guid>();
+        var trackIds = new HashSet<Guid>();
         var addedTracks = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
         // Get top tracks for each of user's favorite tags
@@ -435,17 +436,16 @@ public class PlaylistService : IPlaylistService
                 }
 
                 // Create a unique key to avoid duplicates
-                var trackKey = $"{tagTrack.Artist.Name}|{tagTrack.Name}".ToLowerInvariant();
-                if (addedTracks.Contains(trackKey))
+                var trackKey = string.Concat(tagTrack.Artist.Name, "|", tagTrack.Name);
+                if (!addedTracks.Add(trackKey))
                 {
                     continue;
                 }
 
                 var localTrack = FindTrack(tagTrack.Artist.Name, tagTrack.Name, userId);
-                if (localTrack != null && !trackIds.Contains(localTrack.Id))
+                if (localTrack != null)
                 {
                     trackIds.Add(localTrack.Id);
-                    addedTracks.Add(trackKey);
                 }
             }
         }
@@ -456,10 +456,9 @@ public class PlaylistService : IPlaylistService
         }
 
         // Shuffle to mix tags
-        var random = new Random();
-        trackIds = trackIds.OrderBy(_ => random.Next()).ToList();
+        var shuffledTracks = trackIds.OrderBy(_ => Random.Shared.Next()).ToList();
 
-        return await CreatePlaylistAsync(userId, playlistName, trackIds).ConfigureAwait(false);
+        return await CreatePlaylistAsync(userId, playlistName, shuffledTracks).ConfigureAwait(false);
     }
 
     private async Task<PlaylistResult> CreatePlaylistAsync(Guid userId, string playlistName, List<Guid> trackIds)

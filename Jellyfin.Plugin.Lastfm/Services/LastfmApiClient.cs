@@ -3,6 +3,7 @@
 
 namespace Jellyfin.Plugin.Lastfm.Services;
 
+using System.Buffers;
 using System.Globalization;
 using System.Net;
 using System.Text;
@@ -14,21 +15,16 @@ using Models.Responses;
 /// <summary>
 /// Client for the Last.fm API.
 /// </summary>
-public class LastfmApiClient : ILastfmApiClient
+public partial class LastfmApiClient : ILastfmApiClient
 {
     private const string ApiBaseUrl = "https://ws.audioscrobbler.com/2.0/";
-
-    private static readonly JsonSerializerOptions JsonOptions = new()
-    {
-        PropertyNameCaseInsensitive = true,
-        PropertyNamingPolicy = JsonNamingPolicy.CamelCase
-    };
 
     private readonly IHttpClientFactory _httpClientFactory;
     private readonly ISignatureGenerator _signatureGenerator;
     private readonly ILogger<LastfmApiClient> _logger;
+    private readonly TimeProvider _timeProvider;
     private readonly SemaphoreSlim _rateLimiter = new(1, 1);
-    private DateTime _lastRequestTime = DateTime.MinValue;
+    private DateTimeOffset _lastRequestTime = DateTimeOffset.MinValue;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="LastfmApiClient"/> class.
@@ -36,11 +32,13 @@ public class LastfmApiClient : ILastfmApiClient
     public LastfmApiClient(
         IHttpClientFactory httpClientFactory,
         ISignatureGenerator signatureGenerator,
-        ILogger<LastfmApiClient> logger)
+        ILogger<LastfmApiClient> logger,
+        TimeProvider? timeProvider = null)
     {
         _httpClientFactory = httpClientFactory;
         _signatureGenerator = signatureGenerator;
         _logger = logger;
+        _timeProvider = timeProvider ?? TimeProvider.System;
     }
 
     /// <inheritdoc />
@@ -49,7 +47,7 @@ public class LastfmApiClient : ILastfmApiClient
         string password,
         CancellationToken cancellationToken = default)
     {
-        _logger.LogDebug("Authenticating user {Username}", username);
+        LogAuthenticating(username);
 
         var parameters = new Dictionary<string, string>
         {
@@ -63,11 +61,11 @@ public class LastfmApiClient : ILastfmApiClient
 
         if (response?.Session != null)
         {
-            _logger.LogInformation("Successfully authenticated user {Username}", username);
+            LogAuthenticationSuccess(username);
         }
         else
         {
-            _logger.LogWarning("Authentication failed for user {Username}: {Error}", username, response?.Error?.Message);
+            LogAuthenticationFailed(username, response?.Error?.Message);
         }
 
         return response;
@@ -79,7 +77,7 @@ public class LastfmApiClient : ILastfmApiClient
         string sessionKey,
         CancellationToken cancellationToken = default)
     {
-        _logger.LogDebug("Scrobbling {Artist} - {Track}", scrobble.Artist, scrobble.Track);
+        LogScrobbling(scrobble.Artist, scrobble.Track);
 
         var parameters = new Dictionary<string, string>
         {
@@ -116,15 +114,11 @@ public class LastfmApiClient : ILastfmApiClient
 
         if (response?.Scrobbles?.Attributes?.Accepted > 0)
         {
-            _logger.LogInformation("Successfully scrobbled {Artist} - {Track}", scrobble.Artist, scrobble.Track);
+            LogScrobbleSuccess(scrobble.Artist, scrobble.Track);
         }
         else
         {
-            _logger.LogWarning(
-                "Scrobble rejected for {Artist} - {Track}: {Error}",
-                scrobble.Artist,
-                scrobble.Track,
-                response?.Error?.Message ?? "Unknown error");
+            LogScrobbleRejected(scrobble.Artist, scrobble.Track, response?.Error?.Message ?? "Unknown error");
         }
 
         return response;
@@ -146,7 +140,7 @@ public class LastfmApiClient : ILastfmApiClient
             throw new ArgumentException("Cannot scrobble more than 50 tracks at once", nameof(scrobbles));
         }
 
-        _logger.LogDebug("Batch scrobbling {Count} tracks", scrobbles.Count);
+        LogBatchScrobbling(scrobbles.Count);
 
         var parameters = new Dictionary<string, string>
         {
@@ -188,10 +182,7 @@ public class LastfmApiClient : ILastfmApiClient
 
         if (response?.Scrobbles?.Attributes != null)
         {
-            _logger.LogInformation(
-                "Batch scrobble complete: {Accepted} accepted, {Ignored} ignored",
-                response.Scrobbles.Attributes.Accepted,
-                response.Scrobbles.Attributes.Ignored);
+            LogBatchScrobbleComplete(response.Scrobbles.Attributes.Accepted, response.Scrobbles.Attributes.Ignored);
         }
 
         return response;
@@ -203,7 +194,7 @@ public class LastfmApiClient : ILastfmApiClient
         string sessionKey,
         CancellationToken cancellationToken = default)
     {
-        _logger.LogDebug("Updating now playing: {Artist} - {Track}", scrobble.Artist, scrobble.Track);
+        LogNowPlayingUpdating(scrobble.Artist, scrobble.Track);
 
         var parameters = new Dictionary<string, string>
         {
@@ -244,11 +235,7 @@ public class LastfmApiClient : ILastfmApiClient
         }
         else
         {
-            _logger.LogWarning(
-                "Failed to update now playing for {Artist} - {Track}: {Error}",
-                scrobble.Artist,
-                scrobble.Track,
-                response?.Error?.Message ?? "Unknown error");
+            LogNowPlayingFailed(scrobble.Artist, scrobble.Track, response?.Error?.Message ?? "Unknown error");
         }
 
         return success;
@@ -261,7 +248,7 @@ public class LastfmApiClient : ILastfmApiClient
         string sessionKey,
         CancellationToken cancellationToken = default)
     {
-        _logger.LogDebug("Loving track: {Artist} - {Track}", artist, track);
+        LogLovingTrack(artist, track);
 
         var parameters = new Dictionary<string, string>
         {
@@ -277,15 +264,11 @@ public class LastfmApiClient : ILastfmApiClient
 
         if (success)
         {
-            _logger.LogInformation("Loved track: {Artist} - {Track}", artist, track);
+            LogLovedTrack(artist, track);
         }
         else
         {
-            _logger.LogWarning(
-                "Failed to love track {Artist} - {Track}: {Error}",
-                artist,
-                track,
-                response?.Error?.Message ?? "Unknown error");
+            LogLoveTrackFailed(artist, track, response?.Error?.Message ?? "Unknown error");
         }
 
         return success;
@@ -298,7 +281,7 @@ public class LastfmApiClient : ILastfmApiClient
         string sessionKey,
         CancellationToken cancellationToken = default)
     {
-        _logger.LogDebug("Unloving track: {Artist} - {Track}", artist, track);
+        LogUnlovingTrack(artist, track);
 
         var parameters = new Dictionary<string, string>
         {
@@ -314,15 +297,11 @@ public class LastfmApiClient : ILastfmApiClient
 
         if (success)
         {
-            _logger.LogInformation("Unloved track: {Artist} - {Track}", artist, track);
+            LogUnlovedTrack(artist, track);
         }
         else
         {
-            _logger.LogWarning(
-                "Failed to unlove track {Artist} - {Track}: {Error}",
-                artist,
-                track,
-                response?.Error?.Message ?? "Unknown error");
+            LogUnloveTrackFailed(artist, track, response?.Error?.Message ?? "Unknown error");
         }
 
         return success;
@@ -335,7 +314,7 @@ public class LastfmApiClient : ILastfmApiClient
         int limit = 1000,
         CancellationToken cancellationToken = default)
     {
-        _logger.LogDebug("Fetching loved tracks for {Username}, page {Page}", username, page);
+        LogFetchingLovedTracks(username, page);
 
         var url = $"{ApiBaseUrl}?method=user.getLovedTracks" +
                   $"&user={Uri.EscapeDataString(username)}" +
@@ -348,10 +327,7 @@ public class LastfmApiClient : ILastfmApiClient
 
         if (response?.HasTracks == true)
         {
-            _logger.LogDebug(
-                "Fetched {Count} loved tracks for {Username}",
-                response.LovedTracks?.Tracks?.Count ?? 0,
-                username);
+            LogFetchedLovedTracks(response.LovedTracks?.Tracks?.Count ?? 0, username);
         }
 
         return response;
@@ -365,7 +341,7 @@ public class LastfmApiClient : ILastfmApiClient
         int limit = 1000,
         CancellationToken cancellationToken = default)
     {
-        _logger.LogDebug("Fetching top tracks for {Username}, period {Period}, page {Page}", username, period, page);
+        LogFetchingTopTracks(username, period, page);
 
         var url = $"{ApiBaseUrl}?method=user.getTopTracks" +
                   $"&user={Uri.EscapeDataString(username)}" +
@@ -379,10 +355,7 @@ public class LastfmApiClient : ILastfmApiClient
 
         if (response?.HasTracks == true)
         {
-            _logger.LogDebug(
-                "Fetched {Count} top tracks for {Username}",
-                response.TopTracks?.Tracks?.Count ?? 0,
-                username);
+            LogFetchedTopTracks(response.TopTracks?.Tracks?.Count ?? 0, username);
         }
 
         return response;
@@ -394,7 +367,7 @@ public class LastfmApiClient : ILastfmApiClient
         int limit = 100,
         CancellationToken cancellationToken = default)
     {
-        _logger.LogDebug("Fetching similar artists for {Artist}", artist);
+        LogFetchingSimilarArtists(artist);
 
         var url = $"{ApiBaseUrl}?method=artist.getSimilar" +
                   $"&artist={Uri.EscapeDataString(artist)}" +
@@ -406,10 +379,7 @@ public class LastfmApiClient : ILastfmApiClient
 
         if (response?.SimilarArtists?.Artists != null)
         {
-            _logger.LogDebug(
-                "Fetched {Count} similar artists for {Artist}",
-                response.SimilarArtists.Artists.Count,
-                artist);
+            LogFetchedSimilarArtists(response.SimilarArtists.Artists.Count, artist);
         }
 
         return response;
@@ -422,7 +392,7 @@ public class LastfmApiClient : ILastfmApiClient
         int limit = 100,
         CancellationToken cancellationToken = default)
     {
-        _logger.LogDebug("Fetching similar tracks for {Artist} - {Track}", artist, track);
+        LogFetchingSimilarTracks(artist, track);
 
         var url = $"{ApiBaseUrl}?method=track.getSimilar" +
                   $"&artist={Uri.EscapeDataString(artist)}" +
@@ -435,11 +405,7 @@ public class LastfmApiClient : ILastfmApiClient
 
         if (response?.SimilarTracks?.Tracks != null)
         {
-            _logger.LogDebug(
-                "Fetched {Count} similar tracks for {Artist} - {Track}",
-                response.SimilarTracks.Tracks.Count,
-                artist,
-                track);
+            LogFetchedSimilarTracks(response.SimilarTracks.Tracks.Count, artist, track);
         }
 
         return response;
@@ -451,7 +417,7 @@ public class LastfmApiClient : ILastfmApiClient
         string? mbid = null,
         CancellationToken cancellationToken = default)
     {
-        _logger.LogDebug("Fetching artist info for {Artist} (mbid: {Mbid})", artist ?? "N/A", mbid ?? "N/A");
+        LogFetchingArtistInfo(artist ?? "N/A", mbid ?? "N/A");
 
         var urlBuilder = new StringBuilder($"{ApiBaseUrl}?method=artist.getInfo&api_key={GetApiKey()}&format=json");
 
@@ -465,7 +431,7 @@ public class LastfmApiClient : ILastfmApiClient
         }
         else
         {
-            _logger.LogWarning("GetArtistInfoAsync requires either artist name or mbid");
+            LogArtistInfoMissingParams();
             return null;
         }
 
@@ -473,7 +439,7 @@ public class LastfmApiClient : ILastfmApiClient
 
         if (response?.Artist != null)
         {
-            _logger.LogDebug("Fetched artist info for {Artist}", response.Artist.Name);
+            LogFetchedArtistInfo(response.Artist.Name);
         }
 
         return response;
@@ -486,7 +452,7 @@ public class LastfmApiClient : ILastfmApiClient
         string? mbid = null,
         CancellationToken cancellationToken = default)
     {
-        _logger.LogDebug("Fetching album info for {Artist} - {Album} (mbid: {Mbid})", artist ?? "N/A", album ?? "N/A", mbid ?? "N/A");
+        LogFetchingAlbumInfo(artist ?? "N/A", album ?? "N/A", mbid ?? "N/A");
 
         var urlBuilder = new StringBuilder($"{ApiBaseUrl}?method=album.getInfo&api_key={GetApiKey()}&format=json");
 
@@ -500,7 +466,7 @@ public class LastfmApiClient : ILastfmApiClient
         }
         else
         {
-            _logger.LogWarning("GetAlbumInfoAsync requires either mbid or both artist and album name");
+            LogAlbumInfoMissingParams();
             return null;
         }
 
@@ -508,7 +474,7 @@ public class LastfmApiClient : ILastfmApiClient
 
         if (response?.Album != null)
         {
-            _logger.LogDebug("Fetched album info for {Artist} - {Album}", response.Album.Artist, response.Album.Name);
+            LogFetchedAlbumInfo(response.Album.Artist, response.Album.Name);
         }
 
         return response;
@@ -521,7 +487,7 @@ public class LastfmApiClient : ILastfmApiClient
         long? to = null,
         CancellationToken cancellationToken = default)
     {
-        _logger.LogDebug("Fetching weekly track chart for {Username}", username);
+        LogFetchingWeeklyChart(username);
 
         var urlBuilder = new StringBuilder($"{ApiBaseUrl}?method=user.getWeeklyTrackChart");
         urlBuilder.Append($"&user={Uri.EscapeDataString(username)}");
@@ -541,7 +507,7 @@ public class LastfmApiClient : ILastfmApiClient
 
         if (response?.WeeklyTrackChart?.Tracks != null)
         {
-            _logger.LogDebug("Fetched {Count} tracks from weekly chart for {Username}", response.WeeklyTrackChart.Tracks.Count, username);
+            LogFetchedWeeklyChart(response.WeeklyTrackChart.Tracks.Count, username);
         }
 
         return response;
@@ -553,7 +519,7 @@ public class LastfmApiClient : ILastfmApiClient
         int limit = 50,
         CancellationToken cancellationToken = default)
     {
-        _logger.LogDebug("Fetching top tags for {Username}", username);
+        LogFetchingTopTags(username);
 
         var url = $"{ApiBaseUrl}?method=user.getTopTags" +
                   $"&user={Uri.EscapeDataString(username)}" +
@@ -565,7 +531,7 @@ public class LastfmApiClient : ILastfmApiClient
 
         if (response?.TopTags?.Tags != null)
         {
-            _logger.LogDebug("Fetched {Count} top tags for {Username}", response.TopTags.Tags.Count, username);
+            LogFetchedTopTags(response.TopTags.Tags.Count, username);
         }
 
         return response;
@@ -578,7 +544,7 @@ public class LastfmApiClient : ILastfmApiClient
         int page = 1,
         CancellationToken cancellationToken = default)
     {
-        _logger.LogDebug("Fetching top tracks for tag {Tag}", tag);
+        LogFetchingTagTopTracks(tag);
 
         var url = $"{ApiBaseUrl}?method=tag.getTopTracks" +
                   $"&tag={Uri.EscapeDataString(tag)}" +
@@ -591,7 +557,7 @@ public class LastfmApiClient : ILastfmApiClient
 
         if (response?.Tracks?.TrackList != null)
         {
-            _logger.LogDebug("Fetched {Count} top tracks for tag {Tag}", response.Tracks.TrackList.Count, tag);
+            LogFetchedTagTopTracks(response.Tracks.TrackList.Count, tag);
         }
 
         return response;
@@ -645,22 +611,30 @@ public class LastfmApiClient : ILastfmApiClient
             {
                 using var request = requestFactory();
                 using var httpClient = _httpClientFactory.CreateClient("LastFm");
-                using var response = await httpClient.SendAsync(request, cancellationToken).ConfigureAwait(false);
+                using var response = await httpClient.SendAsync(
+                    request,
+                    HttpCompletionOption.ResponseHeadersRead,
+                    cancellationToken).ConfigureAwait(false);
 
-                var json = await response.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
-
-                if (string.IsNullOrEmpty(json))
+                // Check Content-Length if available (works with streaming)
+                if (response.Content.Headers.ContentLength == 0)
                 {
-                    _logger.LogWarning("Empty response from Last.fm API");
+                    LogEmptyResponse();
                     return null;
                 }
 
-                var result = JsonSerializer.Deserialize<T>(json, JsonOptions);
+                // Stream deserialization for better memory efficiency
+                await using var stream = await response.Content.ReadAsStreamAsync(cancellationToken).ConfigureAwait(false);
+
+                var result = await JsonSerializer.DeserializeAsync<T>(
+                    stream,
+                    LastfmJsonContext.Default.Options,
+                    cancellationToken).ConfigureAwait(false);
 
                 // Check for rate limit error
                 if (result?.Error?.Code == 29)
                 {
-                    _logger.LogWarning("Rate limit exceeded, waiting before retry");
+                    LogRateLimitExceeded();
                     await Task.Delay(delay * 2, cancellationToken).ConfigureAwait(false);
                     delay *= 2;
                     continue;
@@ -669,7 +643,7 @@ public class LastfmApiClient : ILastfmApiClient
                 // Check for temporary failures
                 if (result?.Error?.Code is 11 or 16)
                 {
-                    _logger.LogWarning("Temporary Last.fm service error (code {Code}), retrying", result.Error.Code);
+                    LogTemporaryError(result.Error.Code);
                     await Task.Delay(delay, cancellationToken).ConfigureAwait(false);
                     delay *= 2;
                     continue;
@@ -679,18 +653,18 @@ public class LastfmApiClient : ILastfmApiClient
             }
             catch (HttpRequestException ex) when (attempt < maxRetries)
             {
-                _logger.LogWarning(ex, "HTTP request failed (attempt {Attempt}/{MaxRetries})", attempt, maxRetries);
+                LogHttpRequestFailed(ex, attempt, maxRetries);
                 await Task.Delay(delay, cancellationToken).ConfigureAwait(false);
                 delay *= 2;
             }
             catch (JsonException ex)
             {
-                _logger.LogError(ex, "Failed to parse Last.fm API response");
+                LogJsonParseFailed(ex);
                 return null;
             }
         }
 
-        _logger.LogError("Last.fm API request failed after {MaxRetries} retries", maxRetries);
+        LogMaxRetriesExceeded(maxRetries);
         return null;
     }
 
@@ -702,7 +676,8 @@ public class LastfmApiClient : ILastfmApiClient
         await _rateLimiter.WaitAsync(cancellationToken).ConfigureAwait(false);
         try
         {
-            var timeSinceLastRequest = DateTime.UtcNow - _lastRequestTime;
+            var now = _timeProvider.GetUtcNow();
+            var timeSinceLastRequest = now - _lastRequestTime;
             var minimumDelay = TimeSpan.FromSeconds(1);
 
             if (timeSinceLastRequest < minimumDelay)
@@ -711,7 +686,7 @@ public class LastfmApiClient : ILastfmApiClient
                 await Task.Delay(waitTime, cancellationToken).ConfigureAwait(false);
             }
 
-            _lastRequestTime = DateTime.UtcNow;
+            _lastRequestTime = _timeProvider.GetUtcNow();
         }
         finally
         {
@@ -728,4 +703,134 @@ public class LastfmApiClient : ILastfmApiClient
     {
         return Plugin.Instance?.Configuration.ApiSecret ?? string.Empty;
     }
+
+    // Source-generated logging methods for improved performance
+    [LoggerMessage(Level = LogLevel.Debug, Message = "Authenticating user {Username}")]
+    private partial void LogAuthenticating(string username);
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "Successfully authenticated user {Username}")]
+    private partial void LogAuthenticationSuccess(string username);
+
+    [LoggerMessage(Level = LogLevel.Warning, Message = "Authentication failed for user {Username}: {Error}")]
+    private partial void LogAuthenticationFailed(string username, string? error);
+
+    [LoggerMessage(Level = LogLevel.Debug, Message = "Scrobbling {Artist} - {Track}")]
+    private partial void LogScrobbling(string artist, string track);
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "Successfully scrobbled {Artist} - {Track}")]
+    private partial void LogScrobbleSuccess(string artist, string track);
+
+    [LoggerMessage(Level = LogLevel.Warning, Message = "Scrobble rejected for {Artist} - {Track}: {Error}")]
+    private partial void LogScrobbleRejected(string artist, string track, string? error);
+
+    [LoggerMessage(Level = LogLevel.Debug, Message = "Batch scrobbling {Count} tracks")]
+    private partial void LogBatchScrobbling(int count);
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "Batch scrobble complete: {Accepted} accepted, {Ignored} ignored")]
+    private partial void LogBatchScrobbleComplete(int accepted, int ignored);
+
+    [LoggerMessage(Level = LogLevel.Debug, Message = "Updating now playing: {Artist} - {Track}")]
+    private partial void LogNowPlayingUpdating(string artist, string track);
+
+    [LoggerMessage(Level = LogLevel.Debug, Message = "Now playing updated: {Artist} - {Track}")]
+    private partial void LogNowPlayingSuccess(string artist, string track);
+
+    [LoggerMessage(Level = LogLevel.Warning, Message = "Failed to update now playing for {Artist} - {Track}: {Error}")]
+    private partial void LogNowPlayingFailed(string artist, string track, string? error);
+
+    [LoggerMessage(Level = LogLevel.Debug, Message = "Loving track: {Artist} - {Track}")]
+    private partial void LogLovingTrack(string artist, string track);
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "Loved track: {Artist} - {Track}")]
+    private partial void LogLovedTrack(string artist, string track);
+
+    [LoggerMessage(Level = LogLevel.Warning, Message = "Failed to love track {Artist} - {Track}: {Error}")]
+    private partial void LogLoveTrackFailed(string artist, string track, string? error);
+
+    [LoggerMessage(Level = LogLevel.Debug, Message = "Unloving track: {Artist} - {Track}")]
+    private partial void LogUnlovingTrack(string artist, string track);
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "Unloved track: {Artist} - {Track}")]
+    private partial void LogUnlovedTrack(string artist, string track);
+
+    [LoggerMessage(Level = LogLevel.Warning, Message = "Failed to unlove track {Artist} - {Track}: {Error}")]
+    private partial void LogUnloveTrackFailed(string artist, string track, string? error);
+
+    [LoggerMessage(Level = LogLevel.Debug, Message = "Fetching loved tracks for {Username}, page {Page}")]
+    private partial void LogFetchingLovedTracks(string username, int page);
+
+    [LoggerMessage(Level = LogLevel.Debug, Message = "Fetched {Count} loved tracks for {Username}")]
+    private partial void LogFetchedLovedTracks(int count, string username);
+
+    [LoggerMessage(Level = LogLevel.Debug, Message = "Fetching top tracks for {Username}, period {Period}, page {Page}")]
+    private partial void LogFetchingTopTracks(string username, string period, int page);
+
+    [LoggerMessage(Level = LogLevel.Debug, Message = "Fetched {Count} top tracks for {Username}")]
+    private partial void LogFetchedTopTracks(int count, string username);
+
+    [LoggerMessage(Level = LogLevel.Debug, Message = "Fetching similar artists for {Artist}")]
+    private partial void LogFetchingSimilarArtists(string artist);
+
+    [LoggerMessage(Level = LogLevel.Debug, Message = "Fetched {Count} similar artists for {Artist}")]
+    private partial void LogFetchedSimilarArtists(int count, string artist);
+
+    [LoggerMessage(Level = LogLevel.Debug, Message = "Fetching similar tracks for {Artist} - {Track}")]
+    private partial void LogFetchingSimilarTracks(string artist, string track);
+
+    [LoggerMessage(Level = LogLevel.Debug, Message = "Fetched {Count} similar tracks for {Artist} - {Track}")]
+    private partial void LogFetchedSimilarTracks(int count, string artist, string track);
+
+    [LoggerMessage(Level = LogLevel.Debug, Message = "Fetching artist info for {Artist} (mbid: {Mbid})")]
+    private partial void LogFetchingArtistInfo(string artist, string mbid);
+
+    [LoggerMessage(Level = LogLevel.Warning, Message = "GetArtistInfoAsync requires either artist name or mbid")]
+    private partial void LogArtistInfoMissingParams();
+
+    [LoggerMessage(Level = LogLevel.Debug, Message = "Fetched artist info for {Artist}")]
+    private partial void LogFetchedArtistInfo(string artist);
+
+    [LoggerMessage(Level = LogLevel.Debug, Message = "Fetching album info for {Artist} - {Album} (mbid: {Mbid})")]
+    private partial void LogFetchingAlbumInfo(string artist, string album, string mbid);
+
+    [LoggerMessage(Level = LogLevel.Warning, Message = "GetAlbumInfoAsync requires either mbid or both artist and album name")]
+    private partial void LogAlbumInfoMissingParams();
+
+    [LoggerMessage(Level = LogLevel.Debug, Message = "Fetched album info for {Artist} - {Album}")]
+    private partial void LogFetchedAlbumInfo(string? artist, string album);
+
+    [LoggerMessage(Level = LogLevel.Debug, Message = "Fetching weekly track chart for {Username}")]
+    private partial void LogFetchingWeeklyChart(string username);
+
+    [LoggerMessage(Level = LogLevel.Debug, Message = "Fetched {Count} tracks from weekly chart for {Username}")]
+    private partial void LogFetchedWeeklyChart(int count, string username);
+
+    [LoggerMessage(Level = LogLevel.Debug, Message = "Fetching top tags for {Username}")]
+    private partial void LogFetchingTopTags(string username);
+
+    [LoggerMessage(Level = LogLevel.Debug, Message = "Fetched {Count} top tags for {Username}")]
+    private partial void LogFetchedTopTags(int count, string username);
+
+    [LoggerMessage(Level = LogLevel.Debug, Message = "Fetching top tracks for tag {Tag}")]
+    private partial void LogFetchingTagTopTracks(string tag);
+
+    [LoggerMessage(Level = LogLevel.Debug, Message = "Fetched {Count} top tracks for tag {Tag}")]
+    private partial void LogFetchedTagTopTracks(int count, string tag);
+
+    [LoggerMessage(Level = LogLevel.Warning, Message = "Empty response from Last.fm API")]
+    private partial void LogEmptyResponse();
+
+    [LoggerMessage(Level = LogLevel.Warning, Message = "Rate limit exceeded, waiting before retry")]
+    private partial void LogRateLimitExceeded();
+
+    [LoggerMessage(Level = LogLevel.Warning, Message = "Temporary Last.fm service error (code {Code}), retrying")]
+    private partial void LogTemporaryError(int code);
+
+    [LoggerMessage(Level = LogLevel.Warning, Message = "HTTP request failed (attempt {Attempt}/{MaxRetries})")]
+    private partial void LogHttpRequestFailed(Exception ex, int attempt, int maxRetries);
+
+    [LoggerMessage(Level = LogLevel.Error, Message = "Failed to parse Last.fm API response")]
+    private partial void LogJsonParseFailed(Exception ex);
+
+    [LoggerMessage(Level = LogLevel.Error, Message = "Last.fm API request failed after {MaxRetries} retries")]
+    private partial void LogMaxRetriesExceeded(int maxRetries);
 }

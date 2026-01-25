@@ -62,14 +62,16 @@ public class ScrobbleService : IScrobbleService, IDisposable
     /// <inheritdoc />
     public bool IsDuplicateScrobble(Guid userId, Guid trackId)
     {
-        var cacheKey = $"{userId}:{trackId}";
+        // Use value tuple as cache key to avoid string allocation
+        var cacheKey = (userId, trackId);
         return _scrobbleCache.TryGetValue(cacheKey, out _);
     }
 
     /// <inheritdoc />
     public void RecordScrobble(Guid userId, Guid trackId)
     {
-        var cacheKey = $"{userId}:{trackId}";
+        // Use value tuple as cache key to avoid string allocation
+        var cacheKey = (userId, trackId);
         _scrobbleCache.Set(cacheKey, true, DuplicateWindow);
     }
 

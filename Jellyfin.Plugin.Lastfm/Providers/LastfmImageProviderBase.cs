@@ -88,33 +88,34 @@ public abstract class LastfmImageProviderBase<TItem> : IRemoteImageProvider, IHa
     /// <returns>A list of remote image info (0-1 items).</returns>
     protected List<RemoteImageInfo> ExtractBestImage(List<LastfmImage>? images, string itemName)
     {
-        var result = new List<RemoteImageInfo>();
-
         if (images == null || images.Count == 0)
         {
             Logger.LogDebug("No images found for {ItemName}", itemName);
-            return result;
+            return [];
         }
 
         foreach (var size in SizePriority)
         {
-            var image = images.FirstOrDefault(i =>
+            var image = images.Find(i =>
                 string.Equals(i.Size, size, StringComparison.OrdinalIgnoreCase));
 
-            if (image != null && !string.IsNullOrEmpty(image.Url) && !image.Url.Contains(NoImagePlaceholder))
+            if (image != null && !string.IsNullOrEmpty(image.Url) && !image.Url.Contains(NoImagePlaceholder, StringComparison.Ordinal))
             {
-                result.Add(new RemoteImageInfo
-                {
-                    ProviderName = Name,
-                    Url = image.Url,
-                    Type = ImageType.Primary
-                });
-
                 Logger.LogDebug("Found {Size} image for {ItemName}: {Url}", size, itemName, image.Url);
-                break;
+
+                // Return single-item list with capacity 1
+                return
+                [
+                    new RemoteImageInfo
+                    {
+                        ProviderName = Name,
+                        Url = image.Url,
+                        Type = ImageType.Primary
+                    }
+                ];
             }
         }
 
-        return result;
+        return [];
     }
 }
