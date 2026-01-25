@@ -68,6 +68,49 @@ https://github.com/jesseward/jellyfin-plugin-lastfm/commits/master
 
 ---
 
+## Branch Strategy
+
+### Branches
+- **`main`** - Stable releases only. Protected branch.
+- **`develop`** - Development branch. All PRs target this branch.
+
+### Workflow
+1. Create feature branch from `develop`:
+   ```bash
+   git checkout develop
+   git pull origin develop
+   git checkout -b feature/my-feature
+   ```
+
+2. Make changes, commit, push:
+   ```bash
+   git add .
+   git commit -m "feat: Description"
+   git push origin feature/my-feature
+   ```
+
+3. Create PR to `develop` branch
+
+4. After review & merge to `develop`, test in development
+
+5. When ready for release:
+   - Create PR from `develop` → `main`
+   - Merge to `main`
+   - Tag the release on `main`:
+     ```bash
+     git checkout main
+     git pull origin main
+     git tag -a 10.11.6.1 -m "Release 10.11.6.1"
+     git push origin 10.11.6.1
+     ```
+
+### CI/CD Triggers
+- **Push to `develop`/`main`**: Lint → Test → Build
+- **PR to `develop`/`main`**: Lint → Test → Build
+- **Tag push**: Creates GitHub Release with ZIP
+
+---
+
 ## Version Management
 
 ### Version Scheme
