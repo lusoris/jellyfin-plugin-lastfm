@@ -1,18 +1,18 @@
-﻿namespace Jellyfin.Plugin.Lastfm.Api
+namespace Jellyfin.Plugin.Lastfm.Api
 {
-    using MediaBrowser.Controller.Entities.Audio;
-    using Models;
-    using Models.Requests;
-    using Models.Responses;
-    using Resources;
     using System;
-    using Microsoft.Extensions.Caching.Memory;
     using System.Linq;
     using System.Net.Http;
     using System.Threading;
     using System.Threading.Tasks;
-    using Utils;
+    using MediaBrowser.Controller.Entities.Audio;
+    using Microsoft.Extensions.Caching.Memory;
     using Microsoft.Extensions.Logging;
+    using Models;
+    using Models.Requests;
+    using Models.Responses;
+    using Resources;
+    using Utils;
 
     public class LastfmApiClient : BaseLastfmApiClient
     {
@@ -159,7 +159,8 @@
         public async Task<bool> LoveTrack(Audio item, LastfmUser user, bool love = true)
         {
             var artist = item.Artists.FirstOrDefault();
-            if (artist == null) {
+            if (artist == null)
+            {
                 return false;
             }
 
@@ -181,7 +182,7 @@
 
                 if (response != null && !response.IsError())
                 {
-                    _logger.LogInformation("{Username} {LovedState}loved track '{Track}'", user.Username,  love ? "" : "un", item.Name);
+                    _logger.LogInformation("{Username} {LovedState}loved track '{Track}'", user.Username, love ? "" : "un", item.Name);
                     return true;
                 }
 

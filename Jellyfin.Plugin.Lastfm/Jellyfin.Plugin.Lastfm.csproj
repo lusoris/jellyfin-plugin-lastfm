@@ -5,6 +5,10 @@
     <AssemblyVersion>10.11.6.0</AssemblyVersion>
     <FileVersion>10.11.6.0</FileVersion>
     <Version>10.11.6.0</Version>
+    <!-- Enable .NET analyzers for code quality -->
+    <EnableNETAnalyzers>true</EnableNETAnalyzers>
+    <AnalysisLevel>latest</AnalysisLevel>
+    <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
   </PropertyGroup>
 
   <ItemGroup>

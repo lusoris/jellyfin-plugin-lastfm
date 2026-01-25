@@ -5,6 +5,8 @@ VisualStudioVersion = 15.0.27703.2026
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Jellyfin.Plugin.Lastfm", "Jellyfin.Plugin.Lastfm\Jellyfin.Plugin.Lastfm.csproj", "{D5017415-CDA0-4162-BF0A-34D7A3E1249B}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Jellyfin.Plugin.Lastfm.Tests", "Jellyfin.Plugin.Lastfm.Tests\Jellyfin.Plugin.Lastfm.Tests.csproj", "{CAB3B8FB-81A5-4951-9F9B-1EDDD2E5B44F}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -15,6 +17,10 @@ Global
 		{D5017415-CDA0-4162-BF0A-34D7A3E1249B}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{D5017415-CDA0-4162-BF0A-34D7A3E1249B}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{D5017415-CDA0-4162-BF0A-34D7A3E1249B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{CAB3B8FB-81A5-4951-9F9B-1EDDD2E5B44F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{CAB3B8FB-81A5-4951-9F9B-1EDDD2E5B44F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{CAB3B8FB-81A5-4951-9F9B-1EDDD2E5B44F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{CAB3B8FB-81A5-4951-9F9B-1EDDD2E5B44F}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

@@ -1,17 +1,17 @@
-﻿namespace Jellyfin.Plugin.Lastfm
+namespace Jellyfin.Plugin.Lastfm
 {
+    using System;
+    using System.Linq;
+    using System.Net.Http;
+    using System.Threading;
+    using System.Threading.Tasks;
     using Api;
     using MediaBrowser.Controller.Entities.Audio;
     using MediaBrowser.Controller.Library;
     using MediaBrowser.Controller.Session;
     using MediaBrowser.Model.Entities;
-    using System.Linq;
-    using System.Net.Http;
-    using System.Threading.Tasks;
-    using System;
-    using Microsoft.Extensions.Logging;
     using Microsoft.Extensions.Hosting;
-    using System.Threading;
+    using Microsoft.Extensions.Logging;
 
     /// <summary>
     /// Class ServerEntryPoint

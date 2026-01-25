@@ -1,9 +1,9 @@
-﻿namespace Jellyfin.Plugin.Lastfm.Utils
+namespace Jellyfin.Plugin.Lastfm.Utils
 {
-    using Jellyfin.Database.Implementations.Entities;
-    using Models;
     using System;
     using System.Linq;
+    using Jellyfin.Database.Implementations.Entities;
+    using Models;
 
     public static class UserHelpers
     {

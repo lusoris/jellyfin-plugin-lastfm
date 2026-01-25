@@ -1,4 +1,4 @@
-﻿namespace Jellyfin.Plugin.Lastfm.Models
+namespace Jellyfin.Plugin.Lastfm.Models
 {
     using System;
 
@@ -16,8 +16,8 @@
 
     public class LastFmUserOptions
     {
-        public bool Scrobble        { get; set; }
-        public bool SyncFavourites  { get; set; }
+        public bool Scrobble { get; set; }
+        public bool SyncFavourites { get; set; }
         public bool AlternativeMode { get; set; }
     }
 }

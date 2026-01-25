@@ -1,13 +1,13 @@
-﻿namespace Jellyfin.Plugin.Lastfm.Utils
+namespace Jellyfin.Plugin.Lastfm.Utils
 {
-    using MediaBrowser.Controller.Entities.Audio;
-    using Models;
-    using Resources;
     using System;
     using System.Collections.Generic;
     using System.Linq;
     using System.Security.Cryptography;
     using System.Text;
+    using MediaBrowser.Controller.Entities.Audio;
+    using Models;
+    using Resources;
 
     public static class Helpers
     {

@@ -1,4 +1,4 @@
-﻿namespace Jellyfin.Plugin.Lastfm
+namespace Jellyfin.Plugin.Lastfm
 {
     using System;
     using System.Collections.Generic;

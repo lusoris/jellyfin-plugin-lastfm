@@ -1,9 +1,9 @@
-﻿namespace Jellyfin.Plugin.Lastfm.Providers
+namespace Jellyfin.Plugin.Lastfm.Providers
 {
-    using MediaBrowser.Common.Configuration;
     using System;
     using System.IO;
     using System.Linq;
+    using MediaBrowser.Common.Configuration;
 
     public static class LastfmHelper
     {
