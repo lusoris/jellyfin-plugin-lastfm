@@ -63,7 +63,7 @@ namespace Jellyfin.Plugin.Lastfm.Utils
                 s.Append(String.Format("{0}{1}", item.Key, item.Value));
 
             //Append seceret
-            s.Append(Strings.Keys.LastfmApiSeceret);
+            s.Append(Strings.Keys.LastfmApiSecret);
 
             return CreateMd5Hash(s.ToString());
         }

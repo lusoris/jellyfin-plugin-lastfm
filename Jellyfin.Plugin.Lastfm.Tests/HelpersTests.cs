@@ -60,7 +60,7 @@ public class HelpersTests
 
     /// <summary>
     /// Tests that AppendSignature adds api_sig key to dictionary.
-    /// Note: Uses hardcoded API secret from Strings.Keys.LastfmApiSeceret.
+    /// Note: Uses hardcoded API secret from Strings.Keys.LastfmApiSecret.
     /// </summary>
     [Fact]
     public void AppendSignature_AddsApiSigKey()

@@ -117,3 +117,6 @@ localconfig.sh
 
 
 build/
+
+# Build artifacts
+lastfm_*.zip

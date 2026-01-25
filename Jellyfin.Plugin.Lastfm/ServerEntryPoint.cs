@@ -141,9 +141,9 @@ namespace Jellyfin.Plugin.Lastfm
                 return;
             }
 
-            // the track must have played the minimum percentage (minimumPlayPercentage = 50%) or played for atleast 4 minutes (minimumPlayTimeToScrobbleInTicks).
+            // the track must have played the minimum percentage (minimumPlayPercentage = 50%) or played for at least 4 minutes (minimumPlayTimeToScrobbleInTicks).
             var playPercent = ((double)e.PlaybackPositionTicks / item.RunTimeTicks) * 100;
-            if (playPercent < minimumPlayPercentage & e.PlaybackPositionTicks < minimumPlayTimeToScrobbleInTicks)
+            if (playPercent < minimumPlayPercentage && e.PlaybackPositionTicks < minimumPlayTimeToScrobbleInTicks)
             {
                 _logger.LogDebug("{0} - played {1}%, Last.Fm requires minplayed={2}% . played {3} ticks of minimumPlayTimeToScrobbleInTicks ({4}), won't scrobble", item.Name, playPercent, minimumPlayPercentage, e.PlaybackPositionTicks, minimumPlayTimeToScrobbleInTicks);
                 return;
