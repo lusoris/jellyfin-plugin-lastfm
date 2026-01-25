@@ -3,6 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <title>Last.fm Configuration</title>
+    <style>
+        .lastfm-section { margin-bottom: 2em; }
+        .lastfm-subsection { margin-left: 1em; padding: 1em; background: rgba(0,0,0,0.1); border-radius: 4px; margin-top: 0.5em; }
+        .lastfm-status { padding: 0.5em 1em; border-radius: 4px; margin-top: 0.5em; }
+        .lastfm-status.connected { background: rgba(0,128,0,0.2); color: #4caf50; }
+        .lastfm-status.disconnected { background: rgba(255,0,0,0.1); color: #f44336; }
+        .lastfm-hint { font-size: 0.85em; opacity: 0.7; margin-top: 0.25em; }
+    </style>
 </head>
 <body>
     <div id="LastfmConfigPage" data-role="page" class="page type-interior pluginConfigurationPage"
@@ -11,48 +19,113 @@
         <div data-role="content">
             <div class="content-primary">
                 <form id="lastfmConfigForm">
-                    <div class="verticalSection">
-                        <h2 class="sectionTitle">Last.fm Account</h2>
 
-                        <div class="selectContainer">
-                            <select is="emby-select" id="selectUser" name="selectUser" label="Jellyfin User:"></select>
+                    <!-- API Configuration (Admin) -->
+                    <div class="verticalSection lastfm-section">
+                        <h2 class="sectionTitle">API Configuration</h2>
+                        <div class="lastfm-hint">Get your API key from <a href="https://www.last.fm/api/account/create" target="_blank">last.fm/api</a></div>
+
+                        <div class="inputContainer">
+                            <input is="emby-input" type="text" id="txtApiKey" label="API Key:" />
                         </div>
 
                         <div class="inputContainer">
-                            <input is="emby-input" type="text" id="txtUsername" name="txtUsername" label="Last.fm Username:" />
-                        </div>
-
-                        <div class="inputContainer">
-                            <input is="emby-input" type="password" id="txtPassword" name="txtPassword" label="Last.fm Password:" />
-                            <div class="fieldDescription">Your password is only used once to obtain a session key and is never stored.</div>
+                            <input is="emby-input" type="password" id="txtApiSecret" label="API Secret:" />
                         </div>
                     </div>
 
-                    <div class="verticalSection">
-                        <h2 class="sectionTitle">Options</h2>
+                    <!-- User Selection & Authentication -->
+                    <div class="verticalSection lastfm-section">
+                        <h2 class="sectionTitle">User Configuration</h2>
+
+                        <div class="selectContainer">
+                            <select is="emby-select" id="selectUser" label="Jellyfin User:"></select>
+                        </div>
+
+                        <div id="userStatus" class="lastfm-status disconnected">
+                            Not connected to Last.fm
+                        </div>
+
+                        <div class="lastfm-subsection" id="authSection">
+                            <h3>Connect to Last.fm</h3>
+                            <div class="inputContainer">
+                                <input is="emby-input" type="text" id="txtUsername" label="Last.fm Username:" />
+                            </div>
+                            <div class="inputContainer">
+                                <input is="emby-input" type="password" id="txtPassword" label="Last.fm Password:" />
+                                <div class="fieldDescription">Your password is used once to get a session key and is never stored.</div>
+                            </div>
+                            <button is="emby-button" type="button" id="btnAuthenticate" class="raised button-submit">
+                                <span>Authenticate</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Scrobbling Options -->
+                    <div class="verticalSection lastfm-section" id="optionsSection" style="display:none;">
+                        <h2 class="sectionTitle">Scrobbling</h2>
 
                         <div class="checkboxContainer">
                             <label>
-                                <input is="emby-checkbox" type="checkbox" id="chkScrobble" name="chkScrobble" />
+                                <input is="emby-checkbox" type="checkbox" id="chkScrobble" />
                                 <span>Enable scrobbling</span>
                             </label>
                         </div>
 
                         <div class="checkboxContainer">
                             <label>
-                                <input is="emby-checkbox" type="checkbox" id="chkSyncFavorites" name="chkSyncFavorites" />
-                                <span>Sync favorites to loved tracks</span>
+                                <input is="emby-checkbox" type="checkbox" id="chkNowPlaying" />
+                                <span>Send "Now Playing" updates</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Sync JF → Last.fm -->
+                    <div class="verticalSection lastfm-section" id="syncToLastfmSection" style="display:none;">
+                        <h2 class="sectionTitle">Sync to Last.fm</h2>
+
+                        <div class="checkboxContainer">
+                            <label>
+                                <input is="emby-checkbox" type="checkbox" id="chkSyncFavorites" />
+                                <span>Sync favorites → loved tracks</span>
                             </label>
                         </div>
 
                         <div class="checkboxContainer">
                             <label>
-                                <input is="emby-checkbox" type="checkbox" id="chkImportLoved" name="chkImportLoved" />
-                                <span>Import loved tracks as favorites</span>
+                                <input is="emby-checkbox" type="checkbox" id="chkSyncUnfavorites" />
+                                <span>Sync unfavorites → unloved tracks</span>
                             </label>
                         </div>
                     </div>
 
+                    <!-- Sync Last.fm → JF -->
+                    <div class="verticalSection lastfm-section" id="syncFromLastfmSection" style="display:none;">
+                        <h2 class="sectionTitle">Import from Last.fm</h2>
+
+                        <div class="checkboxContainer">
+                            <label>
+                                <input is="emby-checkbox" type="checkbox" id="chkImportLoved" />
+                                <span>Import loved tracks as favorites</span>
+                            </label>
+                        </div>
+
+                        <div class="checkboxContainer">
+                            <label>
+                                <input is="emby-checkbox" type="checkbox" id="chkImportPlayCounts" />
+                                <span>Import play counts</span>
+                            </label>
+                        </div>
+
+                        <div class="checkboxContainer">
+                            <label>
+                                <input is="emby-checkbox" type="checkbox" id="chkImportLastPlayed" />
+                                <span>Import last played dates</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Save Button -->
                     <div>
                         <button is="emby-button" type="submit" class="raised button-submit block emby-button">
                             <span>Save</span>
@@ -63,47 +136,153 @@
         </div>
 
         <script type="text/javascript">
-            // Plugin configuration script
             const PLUGIN_ID = '5e7fe7f0-b048-429e-a431-b1a7e69c930d';
+            let currentConfig = null;
+            let currentUserId = null;
 
             document.addEventListener('viewshow', function() {
-                const page = this;
-                loadConfiguration(page);
+                loadConfiguration();
             });
 
-            async function loadConfiguration(page) {
-                // TODO: Implement configuration loading
+            async function loadConfiguration() {
                 Dashboard.showLoadingMsg();
-
                 try {
                     const [config, users] = await Promise.all([
                         ApiClient.getPluginConfiguration(PLUGIN_ID),
                         ApiClient.getUsers()
                     ]);
 
-                    populateUserSelect(page, users);
-                    // TODO: Populate form with user config
+                    currentConfig = config;
+                    populateUserSelect(users);
+                    loadApiConfig();
 
+                    if (users.length > 0) {
+                        currentUserId = users[0].Id;
+                        loadUserConfig(currentUserId);
+                    }
                 } catch (error) {
-                    console.error('Failed to load configuration:', error);
+                    console.error('Failed to load config:', error);
                     Dashboard.alert('Failed to load configuration');
                 } finally {
                     Dashboard.hideLoadingMsg();
                 }
             }
 
-            function populateUserSelect(page, users) {
-                const select = page.querySelector('#selectUser');
-                select.innerHTML = users.map(u =>
-                    `<option value="${u.Id}">${u.Name}</option>`
-                ).join('');
+            function populateUserSelect(users) {
+                const select = document.getElementById('selectUser');
+                select.innerHTML = users.map(u => `<option value="${u.Id}">${u.Name}</option>`).join('');
+                select.addEventListener('change', (e) => {
+                    currentUserId = e.target.value;
+                    loadUserConfig(currentUserId);
+                });
             }
 
-            // Form submit handler
-            document.querySelector('#lastfmConfigForm').addEventListener('submit', async function(e) {
+            function loadApiConfig() {
+                document.getElementById('txtApiKey').value = currentConfig.ApiKey || '';
+                document.getElementById('txtApiSecret').value = currentConfig.ApiSecret || '';
+            }
+
+            function loadUserConfig(userId) {
+                const userConfig = (currentConfig.LastfmUsers || []).find(u => u.JellyfinUserId === userId);
+                const statusEl = document.getElementById('userStatus');
+                const optionsSection = document.getElementById('optionsSection');
+                const syncToSection = document.getElementById('syncToLastfmSection');
+                const syncFromSection = document.getElementById('syncFromLastfmSection');
+
+                if (userConfig && userConfig.SessionKey) {
+                    // User is connected
+                    statusEl.className = 'lastfm-status connected';
+                    statusEl.textContent = `Connected as ${userConfig.Username}`;
+                    document.getElementById('txtUsername').value = userConfig.Username;
+
+                    // Show options
+                    optionsSection.style.display = 'block';
+                    syncToSection.style.display = 'block';
+                    syncFromSection.style.display = 'block';
+
+                    // Load user options
+                    const opts = userConfig.Options || {};
+                    document.getElementById('chkScrobble').checked = opts.ScrobbleEnabled !== false;
+                    document.getElementById('chkNowPlaying').checked = opts.NowPlayingEnabled !== false;
+                    document.getElementById('chkSyncFavorites').checked = opts.SyncFavoritesToLoved !== false;
+                    document.getElementById('chkSyncUnfavorites').checked = opts.SyncUnfavoritesToUnloved !== false;
+                    document.getElementById('chkImportLoved').checked = opts.ImportLovedTracks !== false;
+                    document.getElementById('chkImportPlayCounts').checked = opts.ImportPlayCounts === true;
+                    document.getElementById('chkImportLastPlayed').checked = opts.ImportLastPlayedDates === true;
+                } else {
+                    // User not connected
+                    statusEl.className = 'lastfm-status disconnected';
+                    statusEl.textContent = 'Not connected to Last.fm';
+                    document.getElementById('txtUsername').value = '';
+
+                    optionsSection.style.display = 'none';
+                    syncToSection.style.display = 'none';
+                    syncFromSection.style.display = 'none';
+                }
+            }
+
+            // Authenticate button
+            document.getElementById('btnAuthenticate').addEventListener('click', async function() {
+                const username = document.getElementById('txtUsername').value.trim();
+                const password = document.getElementById('txtPassword').value;
+
+                if (!username || !password) {
+                    Dashboard.alert('Please enter username and password');
+                    return;
+                }
+
+                Dashboard.showLoadingMsg();
+                try {
+                    const response = await ApiClient.ajax({
+                        type: 'POST',
+                        url: ApiClient.getUrl('Lastfm/Login'),
+                        data: JSON.stringify({ Username: username, Password: password, JellyfinUserId: currentUserId }),
+                        contentType: 'application/json'
+                    });
+
+                    document.getElementById('txtPassword').value = '';
+                    await loadConfiguration();
+                    Dashboard.alert('Successfully connected to Last.fm!');
+                } catch (error) {
+                    console.error('Auth failed:', error);
+                    Dashboard.alert('Authentication failed. Check your credentials.');
+                } finally {
+                    Dashboard.hideLoadingMsg();
+                }
+            });
+
+            // Save form
+            document.getElementById('lastfmConfigForm').addEventListener('submit', async function(e) {
                 e.preventDefault();
-                // TODO: Implement save
-                Dashboard.alert('Configuration saved!');
+
+                // Update API config
+                currentConfig.ApiKey = document.getElementById('txtApiKey').value.trim();
+                currentConfig.ApiSecret = document.getElementById('txtApiSecret').value.trim();
+
+                // Update user config if connected
+                const userIndex = (currentConfig.LastfmUsers || []).findIndex(u => u.JellyfinUserId === currentUserId);
+                if (userIndex >= 0) {
+                    const opts = currentConfig.LastfmUsers[userIndex].Options || {};
+                    opts.ScrobbleEnabled = document.getElementById('chkScrobble').checked;
+                    opts.NowPlayingEnabled = document.getElementById('chkNowPlaying').checked;
+                    opts.SyncFavoritesToLoved = document.getElementById('chkSyncFavorites').checked;
+                    opts.SyncUnfavoritesToUnloved = document.getElementById('chkSyncUnfavorites').checked;
+                    opts.ImportLovedTracks = document.getElementById('chkImportLoved').checked;
+                    opts.ImportPlayCounts = document.getElementById('chkImportPlayCounts').checked;
+                    opts.ImportLastPlayedDates = document.getElementById('chkImportLastPlayed').checked;
+                    currentConfig.LastfmUsers[userIndex].Options = opts;
+                }
+
+                Dashboard.showLoadingMsg();
+                try {
+                    await ApiClient.updatePluginConfiguration(PLUGIN_ID, currentConfig);
+                    Dashboard.alert('Configuration saved!');
+                } catch (error) {
+                    console.error('Save failed:', error);
+                    Dashboard.alert('Failed to save configuration');
+                } finally {
+                    Dashboard.hideLoadingMsg();
+                }
             });
         </script>
     </div>
