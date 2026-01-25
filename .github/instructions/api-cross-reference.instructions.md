@@ -6,6 +6,33 @@ applyTo: "**/*.cs"
 
 This document maps Last.fm API endpoints to Jellyfin APIs for implementing all plugin features.
 
+## ⚠️ Important: EFCore Migration Note (Jellyfin 10.11+)
+
+Jellyfin 10.11 migrated from SQLite to Entity Framework Core (EFCore). **This does NOT affect plugins** because:
+
+1. **Plugins use abstraction layers** - We use `ILibraryManager`, `IUserDataManager`, etc.
+2. **No direct database access** - Plugins never touch `JellyfinDbContext` or raw SQL
+3. **API stability** - The Jellyfin plugin APIs remain stable across this internal change
+
+**What this means for us:**
+- ✅ `ILibraryManager.GetItemList()` works identically
+- ✅ `IUserDataManager.GetUserData()` works identically  
+- ✅ Provider IDs, metadata, user data all work unchanged
+- ✅ No code changes required for EFCore migration
+
+**Never do this in a plugin:**
+```csharp
+// ❌ WRONG - Never access EFCore directly
+using Microsoft.EntityFrameworkCore;
+var dbContext = serviceProvider.GetService<JellyfinDbContext>();
+
+// ✅ CORRECT - Use Jellyfin service interfaces
+_libraryManager.GetItemList(query);
+_userDataManager.GetUserData(user, item);
+```
+
+---
+
 ## Table of Contents
 
 1. [Core Sync Operations](#core-sync-operations)

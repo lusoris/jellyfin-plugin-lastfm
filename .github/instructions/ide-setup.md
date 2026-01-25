@@ -4,6 +4,10 @@
 ## Prerequisites (All IDEs)
 
 ### .NET SDK
+
+<details>
+<summary><b>Bash / Zsh</b></summary>
+
 ```bash
 # Check installed version
 dotnet --version  # Must be 9.0+
@@ -14,18 +18,97 @@ sudo apt install dotnet-sdk-9.0
 # Install on macOS
 brew install dotnet@9
 
+# Add to PATH (if needed)
+export DOTNET_ROOT="$HOME/.dotnet"
+export PATH="$PATH:$DOTNET_ROOT:$DOTNET_ROOT/tools"
+```
+</details>
+
+<details>
+<summary><b>Fish</b></summary>
+
+```fish
+# Check installed version
+dotnet --version  # Must be 9.0+
+
+# Install on Linux (Ubuntu/Debian)
+sudo apt install dotnet-sdk-9.0
+
+# Install on macOS
+brew install dotnet@9
+
+# Add to PATH (if needed) - add to ~/.config/fish/config.fish
+set -gx DOTNET_ROOT $HOME/.dotnet
+fish_add_path $DOTNET_ROOT $DOTNET_ROOT/tools
+```
+</details>
+
+<details>
+<summary><b>PowerShell</b></summary>
+
+```powershell
+# Check installed version
+dotnet --version  # Must be 9.0+
+
 # Install on Windows
 winget install Microsoft.DotNet.SDK.9
+
+# Install on Linux/macOS (via script)
+Invoke-WebRequest -Uri https://dot.net/v1/dotnet-install.ps1 -OutFile dotnet-install.ps1
+./dotnet-install.ps1 -Channel 9.0
+
+# Add to PATH (if needed) - add to $PROFILE
+$env:DOTNET_ROOT = "$HOME\.dotnet"
+$env:PATH = "$env:PATH;$env:DOTNET_ROOT;$env:DOTNET_ROOT\tools"
 ```
+</details>
 
 ### Required Tools
+
+<details>
+<summary><b>Bash / Zsh</b></summary>
+
 ```bash
 # Git (for version control)
 git --version  # Any recent version
 
 # Verify .NET analyzers work
 dotnet build --no-incremental
+
+# Run tests
+dotnet test
 ```
+</details>
+
+<details>
+<summary><b>Fish</b></summary>
+
+```fish
+# Git (for version control)
+git --version  # Any recent version
+
+# Verify .NET analyzers work
+dotnet build --no-incremental
+
+# Run tests
+dotnet test
+```
+</details>
+
+<details>
+<summary><b>PowerShell</b></summary>
+
+```powershell
+# Git (for version control)
+git --version  # Any recent version
+
+# Verify .NET analyzers work
+dotnet build --no-incremental
+
+# Run tests
+dotnet test
+```
+</details>
 
 ---
 
@@ -188,13 +271,51 @@ omnisharp --version
 ### Terminal Tasks in Zed
 
 Use Zed's terminal (`Ctrl+`` `) for:
+
+<details>
+<summary><b>Bash / Zsh</b></summary>
+
 ```bash
 # Build
 dotnet build Jellyfin.Plugin.Lastfm -c Release
 
 # Clean rebuild
 dotnet clean && dotnet build Jellyfin.Plugin.Lastfm
+
+# Run tests
+dotnet test
 ```
+</details>
+
+<details>
+<summary><b>Fish</b></summary>
+
+```fish
+# Build
+dotnet build Jellyfin.Plugin.Lastfm -c Release
+
+# Clean rebuild
+dotnet clean; and dotnet build Jellyfin.Plugin.Lastfm
+
+# Run tests
+dotnet test
+```
+</details>
+
+<details>
+<summary><b>PowerShell</b></summary>
+
+```powershell
+# Build
+dotnet build Jellyfin.Plugin.Lastfm -c Release
+
+# Clean rebuild
+dotnet clean; dotnet build Jellyfin.Plugin.Lastfm
+
+# Run tests
+dotnet test
+```
+</details>
 
 ### Known Limitations
 
@@ -282,23 +403,65 @@ dotnet tool install -g omnisharp
 ## Common Issues & Solutions
 
 ### "SDK not found"
+
+<details>
+<summary><b>Bash / Zsh</b></summary>
+
 ```bash
 # Check SDK installation
 dotnet --list-sdks
 
 # Ensure PATH includes dotnet
 export PATH="$PATH:$HOME/.dotnet"
+echo 'export PATH="$PATH:$HOME/.dotnet"' >> ~/.bashrc  # or ~/.zshrc
 ```
+</details>
+
+<details>
+<summary><b>Fish</b></summary>
+
+```fish
+# Check SDK installation
+dotnet --list-sdks
+
+# Ensure PATH includes dotnet
+fish_add_path $HOME/.dotnet
+
+# Make permanent - add to ~/.config/fish/config.fish
+echo 'fish_add_path $HOME/.dotnet' >> ~/.config/fish/config.fish
+```
+</details>
+
+<details>
+<summary><b>PowerShell</b></summary>
+
+```powershell
+# Check SDK installation
+dotnet --list-sdks
+
+# Ensure PATH includes dotnet (temporary)
+$env:PATH = "$env:PATH;$HOME\.dotnet"
+
+# Make permanent - add to $PROFILE
+Add-Content $PROFILE '$env:PATH = "$env:PATH;$HOME\.dotnet"'
+```
+</details>
 
 ### "Analyzer errors in IDE but build succeeds"
-```bash
-# Force analyzer reload
-dotnet build --no-incremental
 
-# Clear IDE caches
-# VS Code: Cmd/Ctrl+Shift+P → "OmniSharp: Restart"
-# Rider: File → Invalidate Caches
+<details>
+<summary><b>All Shells</b></summary>
+
+```bash
+# Force analyzer reload (same in all shells)
+dotnet build --no-incremental
 ```
+
+**IDE-specific:**
+- **VS Code**: `Cmd/Ctrl+Shift+P` → "OmniSharp: Restart"
+- **Rider**: File → Invalidate Caches
+- **Zed**: Restart the editor
+</details>
 
 ### "IntelliSense not working"
 1. Ensure `.sln` file exists and is loaded
@@ -313,9 +476,201 @@ This project uses `TreatWarningsAsErrors=true`. Fix all warnings or add suppress
 
 ---
 
+## VS Code Workspace Templates & Profiles
+
+### Workspace Templates
+
+VS Code doesn't have built-in project templates, but you can:
+
+**1. Use `.code-workspace` files for project presets:**
+
+Create `jellyfin-lastfm.code-workspace`:
+```json
+{
+  "folders": [
+    { "path": "." }
+  ],
+  "settings": {
+    "dotnet.defaultSolution": "Jellyfin.Plugin.Lastfm.sln",
+    "omnisharp.enableRoslynAnalyzers": true,
+    "editor.formatOnSave": true
+  },
+  "extensions": {
+    "recommendations": [
+      "ms-dotnettools.csdevkit",
+      "ms-dotnettools.csharp",
+      "editorconfig.editorconfig"
+    ]
+  }
+}
+```
+
+**2. Copy `.vscode` folder for new projects**
+
+Create a template folder with preconfigured:
+- `.vscode/settings.json`
+- `.vscode/launch.json`
+- `.vscode/tasks.json`
+- `.vscode/extensions.json`
+
+### VS Code Profiles
+
+Profiles let you switch entire configurations (extensions, settings, keybindings):
+
+**Create a Profile:**
+1. `Cmd/Ctrl+Shift+P` → "Profiles: Create Profile"
+2. Name it "Jellyfin Plugin Development"
+3. Select which settings to include
+
+**Switch Profiles:**
+1. Click profile icon (bottom-left gear menu)
+2. Select "Jellyfin Plugin Development"
+
+**Export/Import Profiles:**
+```bash
+# Export profile to file
+code --profile "Jellyfin Plugin Development" --export-profile profile.json
+
+# Import profile
+code --import-profile profile.json
+```
+
+**Recommended Profile Setup:**
+- Extensions: C# Dev Kit, EditorConfig, Error Lens, GitLens
+- Settings: Enable analyzers, format on save, rulers at 120
+- Keybindings: Custom build shortcuts
+
+### Multi-Branch Workspace Management
+
+#### Option 1: Git Worktrees (Recommended)
+
+Checkout multiple branches simultaneously in separate directories:
+
+<details>
+<summary><b>Bash / Zsh</b></summary>
+
+```bash
+# Create worktree for a feature branch
+git worktree add ../lastfm-feature-branch feature/new-feature
+git worktree add ../lastfm-bugfix bugfix/some-fix
+
+# List all worktrees
+git worktree list
+
+# Remove worktree when done
+git worktree remove ../lastfm-feature-branch
+```
+</details>
+
+<details>
+<summary><b>Fish</b></summary>
+
+```fish
+# Create worktree for a feature branch
+git worktree add ../lastfm-feature-branch feature/new-feature
+git worktree add ../lastfm-bugfix bugfix/some-fix
+
+# List all worktrees
+git worktree list
+
+# Remove worktree when done
+git worktree remove ../lastfm-feature-branch
+```
+</details>
+
+<details>
+<summary><b>PowerShell</b></summary>
+
+```powershell
+# Create worktree for a feature branch
+git worktree add ..\lastfm-feature-branch feature/new-feature
+git worktree add ..\lastfm-bugfix bugfix/some-fix
+
+# List all worktrees
+git worktree list
+
+# Remove worktree when done
+git worktree remove ..\lastfm-feature-branch
+```
+</details>
+
+#### Option 2: Multi-Root Workspace
+
+Create a workspace file with multiple branch checkouts:
+
+```json
+{
+  "folders": [
+    { "name": "main", "path": "../jellyfin-plugin-lastfm-main" },
+    { "name": "feature", "path": "../jellyfin-plugin-lastfm-feature" },
+    { "name": "bugfix", "path": "../jellyfin-plugin-lastfm-bugfix" }
+  ],
+  "settings": {
+    "git.autoRepositoryDetection": "subFolders"
+  }
+}
+```
+
+#### Option 3: Branch Switching with Stash
+
+For quick context switching:
+
+<details>
+<summary><b>Bash / Zsh</b></summary>
+
+```bash
+# Stash current work
+git stash push -m "WIP: feature work"
+
+# Switch branch
+git checkout other-branch
+
+# Later, return and restore
+git checkout original-branch
+git stash pop
+```
+</details>
+
+<details>
+<summary><b>Fish</b></summary>
+
+```fish
+# Stash current work
+git stash push -m "WIP: feature work"
+
+# Switch branch
+git checkout other-branch
+
+# Later, return and restore
+git checkout original-branch
+git stash pop
+```
+</details>
+
+<details>
+<summary><b>PowerShell</b></summary>
+
+```powershell
+# Stash current work
+git stash push -m "WIP: feature work"
+
+# Switch branch
+git checkout other-branch
+
+# Later, return and restore
+git checkout original-branch
+git stash pop
+```
+</details>
+
+---
+
 ## Verification Checklist
 
 After setup, verify everything works:
+
+<details>
+<summary><b>Bash / Zsh</b></summary>
 
 ```bash
 # 1. Build succeeds with 0 warnings
@@ -324,9 +679,40 @@ dotnet build Jellyfin.Plugin.Lastfm -c Release
 # 2. Analyzers run
 dotnet build Jellyfin.Plugin.Lastfm --no-incremental 2>&1 | grep -E "warning|error"
 
-# 3. Tests pass (when available)
+# 3. Tests pass
 dotnet test
 ```
+</details>
+
+<details>
+<summary><b>Fish</b></summary>
+
+```fish
+# 1. Build succeeds with 0 warnings
+dotnet build Jellyfin.Plugin.Lastfm -c Release
+
+# 2. Analyzers run
+dotnet build Jellyfin.Plugin.Lastfm --no-incremental 2>&1 | grep -E "warning|error"
+
+# 3. Tests pass
+dotnet test
+```
+</details>
+
+<details>
+<summary><b>PowerShell</b></summary>
+
+```powershell
+# 1. Build succeeds with 0 warnings
+dotnet build Jellyfin.Plugin.Lastfm -c Release
+
+# 2. Analyzers run
+dotnet build Jellyfin.Plugin.Lastfm --no-incremental 2>&1 | Select-String "warning|error"
+
+# 3. Tests pass
+dotnet test
+```
+</details>
 
 **IDE Verification:**
 - [ ] Syntax highlighting works

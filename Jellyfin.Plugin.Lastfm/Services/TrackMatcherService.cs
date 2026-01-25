@@ -9,15 +9,28 @@ using MediaBrowser.Controller.Entities;
 using MediaBrowser.Controller.Entities.Audio;
 using MediaBrowser.Controller.Library;
 using MediaBrowser.Model.Entities;
+using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
 
 /// <summary>
 /// Matches Jellyfin tracks to Last.fm tracks.
 /// </summary>
-public sealed partial class TrackMatcherService : ITrackMatcherService
+public sealed partial class TrackMatcherService : ITrackMatcherService, IDisposable
 {
+    /// <summary>
+    /// Cache duration for MusicBrainz ID lookups.
+    /// </summary>
+    private static readonly TimeSpan MbidCacheDuration = TimeSpan.FromMinutes(30);
+
+    /// <summary>
+    /// Cache duration for negative (not found) lookups - shorter to allow retries.
+    /// </summary>
+    private static readonly TimeSpan NegativeCacheDuration = TimeSpan.FromMinutes(5);
+
     private readonly ILibraryManager _libraryManager;
     private readonly ILogger<TrackMatcherService> _logger;
+    private readonly MemoryCache _mbidCache;
+    private bool _disposed;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="TrackMatcherService"/> class.
@@ -26,6 +39,10 @@ public sealed partial class TrackMatcherService : ITrackMatcherService
     {
         _libraryManager = libraryManager;
         _logger = logger;
+        _mbidCache = new MemoryCache(new MemoryCacheOptions
+        {
+            SizeLimit = 10000 // Max 10k cached lookups
+        });
     }
 
     /// <inheritdoc />
@@ -64,8 +81,45 @@ public sealed partial class TrackMatcherService : ITrackMatcherService
 
     private Audio? FindByMusicBrainzId(string mbid)
     {
+        // Check cache first
+        if (_mbidCache.TryGetValue(mbid, out Guid cachedItemId))
+        {
+            // Negative cache hit (not found marker)
+            if (cachedItemId == Guid.Empty)
+            {
+                return null;
+            }
+
+            // Positive cache hit - retrieve the item
+            var cachedItem = _libraryManager.GetItemById(cachedItemId) as Audio;
+            if (cachedItem != null)
+            {
+                return cachedItem;
+            }
+
+            // Item was deleted - remove from cache
+            _mbidCache.Remove(mbid);
+        }
+
         // Use provider ID filter directly in query for efficiency
         // Try MusicBrainzRecording first (preferred), then MusicBrainzTrack
+        var result = QueryByProviderId(MetadataProvider.MusicBrainzRecording.ToString(), mbid)
+            ?? QueryByProviderId(MetadataProvider.MusicBrainzTrack.ToString(), mbid);
+
+        // Cache the result
+        var cacheOptions = new MemoryCacheEntryOptions
+        {
+            Size = 1,
+            AbsoluteExpirationRelativeToNow = result != null ? MbidCacheDuration : NegativeCacheDuration
+        };
+
+        _mbidCache.Set(mbid, result?.Id ?? Guid.Empty, cacheOptions);
+
+        return result;
+    }
+
+    private Audio? QueryByProviderId(string providerName, string mbid)
+    {
         var query = new InternalItemsQuery
         {
             IncludeItemTypes = [BaseItemKind.Audio],
@@ -73,27 +127,13 @@ public sealed partial class TrackMatcherService : ITrackMatcherService
             Limit = 1,
             HasAnyProviderId = new Dictionary<string, string>
             {
-                [MetadataProvider.MusicBrainzRecording.ToString()] = mbid
+                [providerName] = mbid
             }
         };
 
-        var result = _libraryManager.GetItemList(query)
+        return _libraryManager.GetItemList(query)
             .OfType<Audio>()
             .FirstOrDefault();
-
-        // Fallback to MusicBrainzTrack if not found
-        if (result == null)
-        {
-            query.HasAnyProviderId = new Dictionary<string, string>
-            {
-                [MetadataProvider.MusicBrainzTrack.ToString()] = mbid
-            };
-            result = _libraryManager.GetItemList(query)
-                .OfType<Audio>()
-                .FirstOrDefault();
-        }
-
-        return result;
     }
 
     private Audio? FindByExactName(string artist, string track)
@@ -168,4 +208,14 @@ public sealed partial class TrackMatcherService : ITrackMatcherService
 
     [LoggerMessage(Level = LogLevel.Debug, Message = "No match found for: {Artist} - {Track}")]
     private partial void LogNoMatchFound(string artist, string track);
+
+    /// <inheritdoc />
+    public void Dispose()
+    {
+        if (!_disposed)
+        {
+            _mbidCache.Dispose();
+            _disposed = true;
+        }
+    }
 }
