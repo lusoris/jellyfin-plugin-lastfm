@@ -105,8 +105,8 @@ https://github.com/jesseward/jellyfin-plugin-lastfm/commits/master
      ```
 
 ### CI/CD Triggers
-- **Push to `develop`/`main`**: Lint → Test → Build
-- **PR to `develop`/`main`**: Lint → Test → Build
+- **Push to `develop`**: Lint → Test → Build (instant feedback)
+- **PR to `main`**: Lint → Test → Build (gatekeeper before release)
 - **Tag push**: Creates GitHub Release with ZIP
 
 ---
