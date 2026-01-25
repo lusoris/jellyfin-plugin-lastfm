@@ -9,24 +9,36 @@
 
 ## 📚 Documentation Index
 
-### Getting Started
-| File | Description |
-|------|-------------|
-| [ide-setup.md](ide-setup.md) | **Start here** - VS Code, Zed, Rider setup |
-| [development-workflow.md](development-workflow.md) | Building, versioning, CI/CD |
-| [STATUS.md](STATUS.md) | Implementation status & architecture |
+> **Modular Structure**: Instructions are split into focused modules. Load only what you need.
 
-### API References
+### 🚀 Getting Started
+| Index | Modules |
+|-------|---------|
+| **[ide-setup.instructions.md](ide-setup.instructions.md)** | → [ide/package-managers.md](ide/package-managers.md) (apt, brew, dnf, pacman, winget, choco...) |
+| | → [ide/shell-config.md](ide/shell-config.md) (bash, zsh, fish, PowerShell, nushell) |
+| | → [ide/ide-vscode.md](ide/ide-vscode.md), [ide-zed.md](ide/ide-zed.md), [ide-rider.md](ide/ide-rider.md), [ide-neovim.md](ide/ide-neovim.md) |
+| [development-workflow.md](development-workflow.md) | Build, versioning, CI/CD |
+| [testing.instructions.md](testing.instructions.md) | xUnit, Moq, coverage |
+
+### 📡 API References
+| Index | Modules |
+|-------|---------|
+| **[jellyfin-api.index.md](jellyfin-api.index.md)** | → [api/jellyfin-interfaces.md](api/jellyfin-interfaces.md) (ISessionManager, ILibraryManager) |
+| | → [api/jellyfin-playback.md](api/jellyfin-playback.md) (events, scrobble logic) |
+| | → [api/jellyfin-audio.md](api/jellyfin-audio.md) (Audio, MBIDs, queries) |
+| | → [api/jellyfin-userdata.md](api/jellyfin-userdata.md) (favorites, play counts) |
+| [lastfm-api.instructions.md](lastfm-api.instructions.md) | Last.fm API (scrobble, auth, imports) |
+| [api-cross-reference.instructions.md](api-cross-reference.instructions.md) | Jellyfin ↔ Last.fm mapping |
+
+### 🏗️ Architecture
 | File | Description |
 |------|-------------|
-| [lastfm-api.instructions.md](lastfm-api.instructions.md) | Last.fm API (scrobble, nowplaying, etc.) |
-| [jellyfin-api.instructions.md](jellyfin-api.instructions.md) | Jellyfin plugin interfaces |
-| [jellyfin-architecture.md](jellyfin-architecture.md) | Plugin lifecycle & DI |
+| [jellyfin-architecture.md](jellyfin-architecture.md) | Plugin lifecycle, DI |
 | [jellyfin-models.md](jellyfin-models.md) | Audio, User, UserData types |
 | [jellyfin-configuration.md](jellyfin-configuration.md) | Plugin config system |
-| [api-cross-reference.instructions.md](api-cross-reference.instructions.md) | Last.fm ↔ Jellyfin mapping |
+| [STATUS.md](STATUS.md) | Implementation status |
 
-### Code Quality
+### ✅ Code Quality
 | File | Description |
 |------|-------------|
 | [csharp-patterns.md](csharp-patterns.md) | Performance, async, LoggerMessage |
