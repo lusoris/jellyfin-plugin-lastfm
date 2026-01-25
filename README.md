@@ -1,6 +1,6 @@
 ## jellyfin-plugin-lastfm
 
-[![Build](https://img.shields.io/github/actions/workflow/status/lusoris/jellyfin-plugin-lastfm/build-plugin.yaml?branch=main&label=build)](https://github.com/lusoris/jellyfin-plugin-lastfm/actions/workflows/build-plugin.yaml)
+[![Build](https://github.com/lusoris/jellyfin-plugin-lastfm/actions/workflows/build-plugin.yaml/badge.svg)](https://github.com/lusoris/jellyfin-plugin-lastfm/actions/workflows/build-plugin.yaml)
 [![Release](https://img.shields.io/github/v/release/lusoris/jellyfin-plugin-lastfm)](https://github.com/lusoris/jellyfin-plugin-lastfm/releases/latest)
 [![.NET](https://img.shields.io/badge/.NET-9.0-512BD4)](https://dotnet.microsoft.com/)
 [![Jellyfin](https://img.shields.io/badge/Jellyfin-10.11.6-00A4DC)](https://jellyfin.org/)
