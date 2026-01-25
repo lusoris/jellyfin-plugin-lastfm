@@ -18,12 +18,15 @@ Steps:
 4. Click "Save"
 5. Go to "Catalog" tab, find "Last.fm", and click "Install"
 
-### Option 2: Manual Download (10.11.6.0)
-Download directly from GitHub release:
-- **GitHub Release**: [github.com/lusoris/jellyfin-plugin-lastfm/releases/tag/10.11.6.0](https://github.com/lusoris/jellyfin-plugin-lastfm/releases/tag/10.11.6.0)
-- Direct Download: [lastfm_10.11.6.0.zip](https://github.com/lusoris/jellyfin-plugin-lastfm/releases/download/10.11.6.0/lastfm_10.11.6.0.zip)
-
-Upload the ZIP file to Jellyfin's Plugins section in the admin dashboard.
+### Option 2: Manual Installation
+1. Download the ZIP from the [latest release](https://github.com/lusoris/jellyfin-plugin-lastfm/releases/latest)
+2. Extract `Jellyfin.Plugin.Lastfm.dll` from the ZIP
+3. Copy the DLL to your Jellyfin plugins directory:
+   - **Linux**: `/var/lib/jellyfin/plugins/Lastfm/`
+   - **Windows (Tray)**: `%ProgramData%\Jellyfin\Server\plugins\Lastfm\`
+   - **Windows (Direct)**: `%UserProfile%\AppData\Local\jellyfin\plugins\Lastfm\`
+   - **Docker**: Mount or copy to `/config/plugins/Lastfm/` inside the container
+4. Restart Jellyfin
 
 ### Version Info
 Latest version targets **Jellyfin 10.11.6** with .NET 9.0
