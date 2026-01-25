@@ -13,19 +13,25 @@ Scrobble your Jellyfin music playback to [Last.fm](https://www.last.fm/), sync l
 
 ## ✨ Features
 
-### Current
-- **Scrobbling** - Automatically track plays to Last.fm
-- **Now Playing** - Show what you're listening to
-- **Loved Tracks Sync** - Sync favorites between Jellyfin and Last.fm
-- **Metadata Providers** - Artist and album images from Last.fm
+### Core Features
+- **Scrobbling** - Automatically track plays to Last.fm with offline queue support
+- **Now Playing** - Show what you're listening to in real-time
+- **Loved Tracks Sync** - Bidirectional sync between Jellyfin favorites and Last.fm loved tracks
+- **Play Count Import** - Sync your Last.fm scrobble history to Jellyfin
 
-### Planned (Clean-Room Rewrite)
-- **Bidirectional sync** - Full two-way synchronization
-- **Play count import** - Sync your Last.fm scrobble history
-- **Smart playlists** - Auto-generated playlists from Last.fm recommendations
-- **Custom UI pages** - Last.fm stats and recommendations in Jellyfin
+### Smart Playlists
+- **Similar Artists Mix** - Discover music from artists similar to your favorites
+- **Similar Tracks Mix** - Find tracks similar to your loved songs
+- **Rediscover Favorites** - Revisit loved tracks you haven't played recently
 
-See the [ROADMAP](.github/instructions/ROADMAP.md) for details.
+### Custom UI Pages
+- **Recommendations Page** - Create smart playlists with one click
+- **Statistics Page** - View connection status, enabled features, and queue info
+
+### Developer Features
+- **REST API** - Full API for authentication, status, and playlist creation
+- **Batch Scrobbling** - Submit up to 50 scrobbles at once
+- **Offline Queue** - Failed scrobbles are automatically retried
 
 ## 🔧 Installation
 
@@ -75,7 +81,33 @@ https://raw.githubusercontent.com/lusoris/jellyfin-plugin-lastfm/main/manifest.j
 | Option | Description |
 |--------|-------------|
 | Enable Scrobbling | Track plays to Last.fm |
-| Sync Favorites | Sync loved tracks with Last.fm |
+| Send Now Playing | Show currently playing track on Last.fm |
+| Sync Favorites → Loved | Sync Jellyfin favorites to Last.fm loved tracks |
+| Sync Unfavorites → Unloved | Remove loved status when unfavorited |
+| Import Loved Tracks | Import Last.fm loved tracks as Jellyfin favorites |
+| Import Play Counts | Sync Last.fm play counts to Jellyfin |
+
+### Scheduled Tasks
+
+The plugin adds these scheduled tasks (Dashboard → Scheduled Tasks):
+
+| Task | Description | Default |
+|------|-------------|---------|
+| Import Loved Tracks | Syncs loved tracks from Last.fm | Daily |
+| Sync Play Counts | Imports play counts from Last.fm | Weekly |
+| Process Scrobble Queue | Submits queued offline scrobbles | Every 15 min |
+
+### REST API Endpoints
+
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/Lastfm/Authenticate` | POST | Authenticate user with Last.fm |
+| `/Lastfm/Status/{userId}` | GET | Get user connection status |
+| `/Lastfm/Disconnect/{userId}` | POST | Disconnect user from Last.fm |
+| `/Lastfm/Queue/{userId}` | GET | Get pending scrobble queue |
+| `/Lastfm/Playlists/SimilarArtists` | POST | Create similar artists playlist |
+| `/Lastfm/Playlists/SimilarTracks` | POST | Create similar tracks playlist |
+| `/Lastfm/Playlists/RediscoverFavorites` | POST | Create rediscover favorites playlist |
 
 ## 🏗️ Building from Source
 

@@ -9,9 +9,9 @@
         .lastfm-header h1 { margin: 0; display: flex; align-items: center; gap: 0.5em; }
         .lastfm-header .icon { font-size: 1.5em; }
         .lastfm-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 1.5em; }
-        .lastfm-card { 
-            background: rgba(255,255,255,0.05); 
-            border-radius: 8px; 
+        .lastfm-card {
+            background: rgba(255,255,255,0.05);
+            border-radius: 8px;
             padding: 1.5em;
             transition: transform 0.2s, box-shadow 0.2s;
         }
@@ -112,7 +112,7 @@
                     const users = await ApiClient.getUsers();
                     const select = document.getElementById('selectUser');
                     select.innerHTML = users.map(u => `<option value="${u.Id}">${u.Name}</option>`).join('');
-                    
+
                     if (users.length > 0) {
                         currentUserId = users[0].Id;
                         select.addEventListener('change', (e) => {
@@ -133,7 +133,7 @@
                         url: ApiClient.getUrl('Lastfm/Status/' + currentUserId),
                         type: 'GET'
                     });
-                    
+
                     if (response.IsConnected) {
                         statusEl.innerHTML = `✓ Connected as <strong>${response.Username}</strong>`;
                         statusEl.style.color = '#52b54b';
@@ -171,7 +171,7 @@
                 resultEl.style.display = 'none';
 
                 Dashboard.showLoadingMsg();
-                
+
                 try {
                     const response = await ApiClient.fetch({
                         url: ApiClient.getUrl('Lastfm/Playlists/' + type),
