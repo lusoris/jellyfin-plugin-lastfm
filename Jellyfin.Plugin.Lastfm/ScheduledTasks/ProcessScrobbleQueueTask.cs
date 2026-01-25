@@ -50,7 +50,7 @@ public class ProcessScrobbleQueueTask : IScheduledTask
         [
             new TaskTriggerInfo
             {
-                Type = TaskTriggerInfo.TriggerInterval,
+                Type = TaskTriggerInfoType.IntervalTrigger,
                 IntervalTicks = TimeSpan.FromMinutes(15).Ticks
             }
         ];

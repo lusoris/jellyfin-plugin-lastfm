@@ -39,7 +39,7 @@ public class SignatureGenerator : ISignatureGenerator
         var inputBytes = Encoding.UTF8.GetBytes(input);
         var hashBytes = MD5.HashData(inputBytes);
 
-        // Convert to uppercase hex string
-        return Convert.ToHexStringUpper(hashBytes);
+        // Convert to uppercase hex string (Last.fm requires uppercase)
+        return Convert.ToHexString(hashBytes);
     }
 }
