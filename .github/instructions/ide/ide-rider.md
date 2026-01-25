@@ -60,7 +60,7 @@ Create `Run/Debug Configuration`:
 
 ## Advantages
 
-- ✅ Best-in-class refactoring
+- ✅ Excellent refactoring tools
 - ✅ Built-in decompiler
 - ✅ Superior debugging experience
 - ✅ Database tools
