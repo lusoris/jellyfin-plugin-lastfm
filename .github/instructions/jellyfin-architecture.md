@@ -337,3 +337,52 @@ public class RestApi : ControllerBase
 **Related**: 
 - [copilot-instructions.md](copilot-instructions.md) - Overview & index
 - [lastfm-api-instructions.md](lastfm-api-instructions.md) - API details
+---
+
+## Available Interfaces for Plugin Features
+
+### Automatic Discovery Interfaces (Implement to Add Features)
+
+These interfaces are automatically discovered by Jellyfin at startup. Just implement them and they work:
+
+| Interface | Purpose |
+|-----------|---------|
+| `IAuthenticationProvider` | Add authentication methods (LDAP, OAuth, etc.) |
+| `IBaseItemComparer` | Add sorting rules for media |
+| `IIntroProvider` | Play media before movies/shows (trailers, bumpers) |
+| `IItemResolver` | Define custom media types |
+| `ILibraryPostScanTask` | Run tasks after library scan completes |
+| `IMetadataSaver` | Write metadata in custom formats |
+| `IResolverIgnoreRule` | Define paths to ignore during library scan |
+| `IScheduledTask` | Add tasks to the scheduled tasks dashboard |
+| `IRemoteImageProvider` | Fetch images from external sources |
+| `IRemoteMetadataProvider<T>` | Fetch metadata from external sources |
+| `IExternalId` | Add external ID providers (MusicBrainz, TheMovieDB) |
+
+### Plugin-Specific Interfaces (Require Manual Registration)
+
+| Interface | Purpose |
+|-----------|---------|
+| `IPluginServiceRegistrator` | Register services into DI container |
+| `IPluginConfigurationPage` | Custom config page on dashboard |
+| `IHasWebPages` | Plugin has web UI pages |
+| `IHostedService` | Background service (starts/stops with Jellyfin) |
+| `ControllerBase` | Custom REST API endpoints |
+
+### Jellyfin Services (Available via DI)
+
+| Service | Purpose |
+|---------|---------|
+| `IBlurayExaminer` | Examine Blu-ray folders |
+| `IDtoService` | Create DTOs for API transport |
+| `ILibraryManager` | Access media library directly |
+| `ILocalizationManager` | Translations, ratings, units |
+| `INetworkManager` | Server networking info |
+| `IServerApplicationPaths` | Server paths (plugins, data, config) |
+| `IServerConfigurationManager` | Server configuration read/write |
+| `ITaskManager` | Execute/manage scheduled tasks |
+| `IUserManager` | User retrieval and management |
+| `IXmlSerializer` | XML serialization for config |
+| `IZipClient` | Compression/decompression |
+
+**Source**: [Jellyfin Plugin Template](https://github.com/jellyfin/jellyfin-plugin-template)

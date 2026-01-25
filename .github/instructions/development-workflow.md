@@ -74,6 +74,47 @@ https://github.com/jesseward/jellyfin-plugin-lastfm/commits/master
 - **`main`** - Stable releases only. Protected branch.
 - **`develop`** - Development branch. All PRs target this branch.
 
+---
+
+## NuGet Package Requirements (CRITICAL)
+
+### Required Package Settings
+
+⚠️ **CRITICAL**: Jellyfin packages MUST have `<ExcludeAssets>runtime</ExcludeAssets>` or the plugin will fail to load!
+
+```xml
+<ItemGroup>
+  <!-- Jellyfin packages: MUST exclude runtime assets -->
+  <PackageReference Include="Jellyfin.Controller" Version="10.*-*">
+    <ExcludeAssets>runtime</ExcludeAssets>
+  </PackageReference>
+  
+  <!-- Packages NOT provided by Jellyfin need NO ExcludeAssets -->
+  <PackageReference Include="Microsoft.Extensions.Http" Version="9.0.4" />
+</ItemGroup>
+```
+
+### Why ExcludeAssets?
+When `ExcludeAssets` is missing, the Jellyfin DLLs get copied into the plugin folder. This causes assembly conflicts because Jellyfin already has these DLLs loaded. The plugin shows as "NotSupported" or fails silently.
+
+### Packages Jellyfin Provides (transitively)
+These are available via Jellyfin.Controller and should NOT be added to your csproj:
+- `Microsoft.Extensions.Caching.Memory`
+- `Microsoft.Extensions.Logging`
+- `Microsoft.Extensions.DependencyInjection`
+- `Microsoft.Extensions.Configuration`
+- `System.Text.Json`
+
+### Packages You MUST Add
+These are NOT provided by Jellyfin:
+- `Microsoft.Extensions.Http` (for `IHttpClientFactory`)
+
+### Version Matching
+- Jellyfin packages: Use wildcards like `10.*-*` to auto-update
+- Other packages: Check Jellyfin's own dependencies for compatible versions
+
+---
+
 ### Workflow
 1. Create feature branch from `develop`:
    ```bash

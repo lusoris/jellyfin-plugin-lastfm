@@ -18,8 +18,12 @@
   </ItemGroup>
 
   <ItemGroup>
+    <!-- Jellyfin packages: MUST exclude runtime assets to prevent DLL conflicts -->
+    <PackageReference Include="Jellyfin.Controller" Version="10.*-*">
+      <ExcludeAssets>runtime</ExcludeAssets>
+    </PackageReference>
+    <!-- Microsoft.Extensions.Http is NOT provided by Jellyfin, so we include it -->
     <PackageReference Include="Microsoft.Extensions.Http" Version="9.0.4" />
-    <PackageReference Include="Jellyfin.Controller" Version="10.*-*" />
   </ItemGroup>
 
 </Project>
