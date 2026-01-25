@@ -80,4 +80,47 @@ public interface ILastfmApiClient
     /// <param name="limit">Max number of results.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     Task<SimilarTracksResponse?> GetSimilarTracksAsync(string artist, string track, int limit = 100, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Gets artist information including images and bio.
+    /// </summary>
+    /// <param name="artist">Artist name.</param>
+    /// <param name="mbid">MusicBrainz ID (optional, preferred over name).</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    Task<ArtistInfoResponse?> GetArtistInfoAsync(string? artist = null, string? mbid = null, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Gets album information including images.
+    /// </summary>
+    /// <param name="artist">Artist name.</param>
+    /// <param name="album">Album name.</param>
+    /// <param name="mbid">MusicBrainz ID (optional, preferred over name).</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    Task<AlbumInfoResponse?> GetAlbumInfoAsync(string? artist = null, string? album = null, string? mbid = null, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Gets a user's weekly track chart.
+    /// </summary>
+    /// <param name="username">Last.fm username.</param>
+    /// <param name="from">Unix timestamp for start of week (optional).</param>
+    /// <param name="to">Unix timestamp for end of week (optional).</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    Task<WeeklyTrackChartResponse?> GetWeeklyTrackChartAsync(string username, long? from = null, long? to = null, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Gets a user's top tags.
+    /// </summary>
+    /// <param name="username">Last.fm username.</param>
+    /// <param name="limit">Max number of results.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    Task<UserTopTagsResponse?> GetUserTopTagsAsync(string username, int limit = 50, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Gets top tracks for a tag.
+    /// </summary>
+    /// <param name="tag">Tag name.</param>
+    /// <param name="limit">Max number of results.</param>
+    /// <param name="page">Page number.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    Task<TagTopTracksResponse?> GetTagTopTracksAsync(string tag, int limit = 50, int page = 1, CancellationToken cancellationToken = default);
 }

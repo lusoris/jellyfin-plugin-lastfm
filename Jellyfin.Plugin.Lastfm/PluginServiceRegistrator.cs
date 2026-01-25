@@ -6,7 +6,9 @@ namespace Jellyfin.Plugin.Lastfm;
 using Handlers;
 using MediaBrowser.Controller;
 using MediaBrowser.Controller.Plugins;
+using MediaBrowser.Controller.Providers;
 using Microsoft.Extensions.DependencyInjection;
+using Providers;
 using Queue;
 using Services;
 
@@ -25,6 +27,10 @@ public class PluginServiceRegistrator : IPluginServiceRegistrator
         serviceCollection.AddSingleton<ITrackMatcherService, TrackMatcherService>();
         serviceCollection.AddSingleton<IScrobbleQueue, ScrobbleQueue>();
         serviceCollection.AddSingleton<IPlaylistService, PlaylistService>();
+
+        // Image Providers
+        serviceCollection.AddSingleton<IRemoteImageProvider, LastfmArtistImageProvider>();
+        serviceCollection.AddSingleton<IRemoteImageProvider, LastfmAlbumImageProvider>();
 
         // Event Handlers (IHostedService)
         serviceCollection.AddHostedService<PlaybackEventHandler>();

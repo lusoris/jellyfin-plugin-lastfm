@@ -445,6 +445,158 @@ public class LastfmApiClient : ILastfmApiClient
         return response;
     }
 
+    /// <inheritdoc />
+    public async Task<ArtistInfoResponse?> GetArtistInfoAsync(
+        string? artist = null,
+        string? mbid = null,
+        CancellationToken cancellationToken = default)
+    {
+        _logger.LogDebug("Fetching artist info for {Artist} (mbid: {Mbid})", artist ?? "N/A", mbid ?? "N/A");
+
+        var urlBuilder = new StringBuilder($"{ApiBaseUrl}?method=artist.getInfo&api_key={GetApiKey()}&format=json");
+
+        if (!string.IsNullOrEmpty(mbid))
+        {
+            urlBuilder.Append($"&mbid={Uri.EscapeDataString(mbid)}");
+        }
+        else if (!string.IsNullOrEmpty(artist))
+        {
+            urlBuilder.Append($"&artist={Uri.EscapeDataString(artist)}");
+        }
+        else
+        {
+            _logger.LogWarning("GetArtistInfoAsync requires either artist name or mbid");
+            return null;
+        }
+
+        var response = await GetAsync<ArtistInfoResponse>(urlBuilder.ToString(), cancellationToken).ConfigureAwait(false);
+
+        if (response?.Artist != null)
+        {
+            _logger.LogDebug("Fetched artist info for {Artist}", response.Artist.Name);
+        }
+
+        return response;
+    }
+
+    /// <inheritdoc />
+    public async Task<AlbumInfoResponse?> GetAlbumInfoAsync(
+        string? artist = null,
+        string? album = null,
+        string? mbid = null,
+        CancellationToken cancellationToken = default)
+    {
+        _logger.LogDebug("Fetching album info for {Artist} - {Album} (mbid: {Mbid})", artist ?? "N/A", album ?? "N/A", mbid ?? "N/A");
+
+        var urlBuilder = new StringBuilder($"{ApiBaseUrl}?method=album.getInfo&api_key={GetApiKey()}&format=json");
+
+        if (!string.IsNullOrEmpty(mbid))
+        {
+            urlBuilder.Append($"&mbid={Uri.EscapeDataString(mbid)}");
+        }
+        else if (!string.IsNullOrEmpty(artist) && !string.IsNullOrEmpty(album))
+        {
+            urlBuilder.Append($"&artist={Uri.EscapeDataString(artist)}&album={Uri.EscapeDataString(album)}");
+        }
+        else
+        {
+            _logger.LogWarning("GetAlbumInfoAsync requires either mbid or both artist and album name");
+            return null;
+        }
+
+        var response = await GetAsync<AlbumInfoResponse>(urlBuilder.ToString(), cancellationToken).ConfigureAwait(false);
+
+        if (response?.Album != null)
+        {
+            _logger.LogDebug("Fetched album info for {Artist} - {Album}", response.Album.Artist, response.Album.Name);
+        }
+
+        return response;
+    }
+
+    /// <inheritdoc />
+    public async Task<WeeklyTrackChartResponse?> GetWeeklyTrackChartAsync(
+        string username,
+        long? from = null,
+        long? to = null,
+        CancellationToken cancellationToken = default)
+    {
+        _logger.LogDebug("Fetching weekly track chart for {Username}", username);
+
+        var urlBuilder = new StringBuilder($"{ApiBaseUrl}?method=user.getWeeklyTrackChart");
+        urlBuilder.Append($"&user={Uri.EscapeDataString(username)}");
+        urlBuilder.Append($"&api_key={GetApiKey()}&format=json");
+
+        if (from.HasValue)
+        {
+            urlBuilder.Append($"&from={from.Value}");
+        }
+
+        if (to.HasValue)
+        {
+            urlBuilder.Append($"&to={to.Value}");
+        }
+
+        var response = await GetAsync<WeeklyTrackChartResponse>(urlBuilder.ToString(), cancellationToken).ConfigureAwait(false);
+
+        if (response?.WeeklyTrackChart?.Tracks != null)
+        {
+            _logger.LogDebug("Fetched {Count} tracks from weekly chart for {Username}", response.WeeklyTrackChart.Tracks.Count, username);
+        }
+
+        return response;
+    }
+
+    /// <inheritdoc />
+    public async Task<UserTopTagsResponse?> GetUserTopTagsAsync(
+        string username,
+        int limit = 50,
+        CancellationToken cancellationToken = default)
+    {
+        _logger.LogDebug("Fetching top tags for {Username}", username);
+
+        var url = $"{ApiBaseUrl}?method=user.getTopTags" +
+                  $"&user={Uri.EscapeDataString(username)}" +
+                  $"&limit={limit}" +
+                  $"&api_key={GetApiKey()}" +
+                  $"&format=json";
+
+        var response = await GetAsync<UserTopTagsResponse>(url, cancellationToken).ConfigureAwait(false);
+
+        if (response?.TopTags?.Tags != null)
+        {
+            _logger.LogDebug("Fetched {Count} top tags for {Username}", response.TopTags.Tags.Count, username);
+        }
+
+        return response;
+    }
+
+    /// <inheritdoc />
+    public async Task<TagTopTracksResponse?> GetTagTopTracksAsync(
+        string tag,
+        int limit = 50,
+        int page = 1,
+        CancellationToken cancellationToken = default)
+    {
+        _logger.LogDebug("Fetching top tracks for tag {Tag}", tag);
+
+        var url = $"{ApiBaseUrl}?method=tag.getTopTracks" +
+                  $"&tag={Uri.EscapeDataString(tag)}" +
+                  $"&limit={limit}" +
+                  $"&page={page}" +
+                  $"&api_key={GetApiKey()}" +
+                  $"&format=json";
+
+        var response = await GetAsync<TagTopTracksResponse>(url, cancellationToken).ConfigureAwait(false);
+
+        if (response?.Tracks?.TrackList != null)
+        {
+            _logger.LogDebug("Fetched {Count} top tracks for tag {Tag}", response.Tracks.TrackList.Count, tag);
+        }
+
+        return response;
+    }
+
     /// <summary>
     /// Sends a signed POST request to the Last.fm API.
     /// </summary>

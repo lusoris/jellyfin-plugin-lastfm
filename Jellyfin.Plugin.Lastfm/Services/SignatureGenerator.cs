@@ -11,12 +11,21 @@ using System.Text;
 /// </summary>
 public class SignatureGenerator : ISignatureGenerator
 {
+    /// <summary>
+    /// Parameters that should be excluded from signature calculation.
+    /// </summary>
+    private static readonly HashSet<string> ExcludedParameters = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "format",
+        "callback"
+    };
+
     /// <inheritdoc />
     public string CreateSignature(IDictionary<string, string> parameters, string apiSecret)
     {
-        // Sort parameters alphabetically by key
+        // Sort parameters alphabetically by key, excluding format and callback
         var sortedParams = parameters
-            .Where(kvp => !string.IsNullOrEmpty(kvp.Value))
+            .Where(kvp => !string.IsNullOrEmpty(kvp.Value) && !ExcludedParameters.Contains(kvp.Key))
             .OrderBy(kvp => kvp.Key, StringComparer.Ordinal);
 
         // Concatenate key+value pairs

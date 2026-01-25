@@ -259,6 +259,56 @@ public class LastfmController : ControllerBase
         return Ok(result);
     }
 
+    /// <summary>
+    /// Creates a weekly mixtape playlist based on recent listening.
+    /// </summary>
+    /// <param name="request">Playlist creation request.</param>
+    /// <returns>Playlist creation result.</returns>
+    [HttpPost("Playlists/WeeklyMixtape")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<ActionResult<PlaylistResult>> CreateWeeklyMixtapePlaylist([FromBody] PlaylistRequest request)
+    {
+        _logger.LogInformation("Creating weekly mixtape for user {UserId}", request.UserId);
+
+        var result = await _playlistService.CreateWeeklyMixtapeAsync(
+            request.UserId,
+            request.PlaylistName ?? "Weekly Mixtape",
+            request.MaxTracks ?? 50).ConfigureAwait(false);
+
+        if (!result.Success)
+        {
+            return BadRequest(result);
+        }
+
+        return Ok(result);
+    }
+
+    /// <summary>
+    /// Creates a tag discovery playlist based on user's favorite tags.
+    /// </summary>
+    /// <param name="request">Playlist creation request.</param>
+    /// <returns>Playlist creation result.</returns>
+    [HttpPost("Playlists/TagDiscovery")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<ActionResult<PlaylistResult>> CreateTagDiscoveryPlaylist([FromBody] PlaylistRequest request)
+    {
+        _logger.LogInformation("Creating tag discovery playlist for user {UserId}", request.UserId);
+
+        var result = await _playlistService.CreateTagDiscoveryPlaylistAsync(
+            request.UserId,
+            request.PlaylistName ?? "Tag Discovery",
+            request.MaxTracks ?? 50).ConfigureAwait(false);
+
+        if (!result.Success)
+        {
+            return BadRequest(result);
+        }
+
+        return Ok(result);
+    }
+
     private void SaveUserSession(Guid jellyfinUserId, string username, string sessionKey)
     {
         var plugin = Plugin.Instance;

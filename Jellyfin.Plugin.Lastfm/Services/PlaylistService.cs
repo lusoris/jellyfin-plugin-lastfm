@@ -278,6 +278,190 @@ public class PlaylistService : IPlaylistService
         return await CreatePlaylistAsync(userId, playlistName, trackIds).ConfigureAwait(false);
     }
 
+    /// <inheritdoc />
+    public async Task<PlaylistResult> CreateWeeklyMixtapeAsync(
+        Guid userId,
+        string playlistName,
+        int maxTracks = 50,
+        CancellationToken cancellationToken = default)
+    {
+        var user = _userManager.GetUserById(userId);
+        if (user == null)
+        {
+            return PlaylistResult.FailureResult("User not found");
+        }
+
+        var lastfmUser = Plugin.Instance?.Configuration.GetUserConfig(userId);
+        if (lastfmUser == null || string.IsNullOrEmpty(lastfmUser.Username))
+        {
+            return PlaylistResult.FailureResult("User not connected to Last.fm");
+        }
+
+        _logger.LogInformation("Creating weekly mixtape for {Username}", lastfmUser.Username);
+
+        // Get user's weekly track chart (current week)
+        var weeklyChartResponse = await _lastfmApiClient.GetWeeklyTrackChartAsync(
+            lastfmUser.Username,
+            cancellationToken: cancellationToken).ConfigureAwait(false);
+
+        if (weeklyChartResponse?.WeeklyTrackChart?.Tracks == null ||
+            weeklyChartResponse.WeeklyTrackChart.Tracks.Count == 0)
+        {
+            return PlaylistResult.FailureResult("No weekly listening data found");
+        }
+
+        var trackIds = new List<Guid>();
+        var recentArtists = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+        // First, add some tracks from this week
+        foreach (var chartTrack in weeklyChartResponse.WeeklyTrackChart.Tracks.Take(15))
+        {
+            if (chartTrack.Artist == null || trackIds.Count >= maxTracks / 2)
+            {
+                continue;
+            }
+
+            var localTrack = FindTrack(chartTrack.Artist.Name, chartTrack.Name, userId);
+            if (localTrack != null && !trackIds.Contains(localTrack.Id))
+            {
+                trackIds.Add(localTrack.Id);
+                recentArtists.Add(chartTrack.Artist.Name);
+            }
+        }
+
+        // Then, add similar tracks to create variety
+        foreach (var artistName in recentArtists.Take(5))
+        {
+            if (cancellationToken.IsCancellationRequested || trackIds.Count >= maxTracks)
+            {
+                break;
+            }
+
+            var similarResponse = await _lastfmApiClient.GetSimilarArtistsAsync(
+                artistName,
+                limit: 5,
+                cancellationToken: cancellationToken).ConfigureAwait(false);
+
+            if (similarResponse?.SimilarArtists?.Artists == null)
+            {
+                continue;
+            }
+
+            foreach (var similarArtist in similarResponse.SimilarArtists.Artists)
+            {
+                var localTracks = FindTracksByArtist(similarArtist.Name, userId);
+                foreach (var track in localTracks.Take(2))
+                {
+                    if (!trackIds.Contains(track.Id) && trackIds.Count < maxTracks)
+                    {
+                        trackIds.Add(track.Id);
+                    }
+                }
+            }
+        }
+
+        if (trackIds.Count == 0)
+        {
+            return PlaylistResult.FailureResult("No matching tracks found in library");
+        }
+
+        // Shuffle for variety
+        var random = new Random();
+        trackIds = trackIds.OrderBy(_ => random.Next()).ToList();
+
+        return await CreatePlaylistAsync(userId, playlistName, trackIds).ConfigureAwait(false);
+    }
+
+    /// <inheritdoc />
+    public async Task<PlaylistResult> CreateTagDiscoveryPlaylistAsync(
+        Guid userId,
+        string playlistName,
+        int maxTracks = 50,
+        CancellationToken cancellationToken = default)
+    {
+        var user = _userManager.GetUserById(userId);
+        if (user == null)
+        {
+            return PlaylistResult.FailureResult("User not found");
+        }
+
+        var lastfmUser = Plugin.Instance?.Configuration.GetUserConfig(userId);
+        if (lastfmUser == null || string.IsNullOrEmpty(lastfmUser.Username))
+        {
+            return PlaylistResult.FailureResult("User not connected to Last.fm");
+        }
+
+        _logger.LogInformation("Creating tag discovery playlist for {Username}", lastfmUser.Username);
+
+        // Get user's top tags
+        var topTagsResponse = await _lastfmApiClient.GetUserTopTagsAsync(
+            lastfmUser.Username,
+            limit: 10,
+            cancellationToken: cancellationToken).ConfigureAwait(false);
+
+        if (topTagsResponse?.TopTags?.Tags == null || topTagsResponse.TopTags.Tags.Count == 0)
+        {
+            return PlaylistResult.FailureResult("No tags found for user");
+        }
+
+        var trackIds = new List<Guid>();
+        var addedTracks = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+        // Get top tracks for each of user's favorite tags
+        foreach (var tag in topTagsResponse.TopTags.Tags.Take(5))
+        {
+            if (cancellationToken.IsCancellationRequested || trackIds.Count >= maxTracks)
+            {
+                break;
+            }
+
+            _logger.LogDebug("Fetching tracks for tag: {Tag}", tag.Name);
+
+            var tagTracksResponse = await _lastfmApiClient.GetTagTopTracksAsync(
+                tag.Name,
+                limit: 20,
+                cancellationToken: cancellationToken).ConfigureAwait(false);
+
+            if (tagTracksResponse?.Tracks?.TrackList == null)
+            {
+                continue;
+            }
+
+            foreach (var tagTrack in tagTracksResponse.Tracks.TrackList)
+            {
+                if (tagTrack.Artist == null || trackIds.Count >= maxTracks)
+                {
+                    continue;
+                }
+
+                // Create a unique key to avoid duplicates
+                var trackKey = $"{tagTrack.Artist.Name}|{tagTrack.Name}".ToLowerInvariant();
+                if (addedTracks.Contains(trackKey))
+                {
+                    continue;
+                }
+
+                var localTrack = FindTrack(tagTrack.Artist.Name, tagTrack.Name, userId);
+                if (localTrack != null && !trackIds.Contains(localTrack.Id))
+                {
+                    trackIds.Add(localTrack.Id);
+                    addedTracks.Add(trackKey);
+                }
+            }
+        }
+
+        if (trackIds.Count == 0)
+        {
+            return PlaylistResult.FailureResult("No matching tracks found in library for your favorite tags");
+        }
+
+        // Shuffle to mix tags
+        var random = new Random();
+        trackIds = trackIds.OrderBy(_ => random.Next()).ToList();
+
+        return await CreatePlaylistAsync(userId, playlistName, trackIds).ConfigureAwait(false);
+    }
+
     private async Task<PlaylistResult> CreatePlaylistAsync(Guid userId, string playlistName, List<Guid> trackIds)
     {
         try

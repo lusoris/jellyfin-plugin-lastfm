@@ -52,6 +52,34 @@ public interface IPlaylistService
         string playlistName,
         int maxTracks = 50,
         CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Creates a weekly mixtape playlist based on recent listening history.
+    /// </summary>
+    /// <param name="userId">Jellyfin user ID.</param>
+    /// <param name="playlistName">Name for the playlist.</param>
+    /// <param name="maxTracks">Maximum number of tracks.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>Playlist creation result.</returns>
+    Task<PlaylistResult> CreateWeeklyMixtapeAsync(
+        Guid userId,
+        string playlistName,
+        int maxTracks = 50,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Creates a tag discovery playlist based on user's favorite tags.
+    /// </summary>
+    /// <param name="userId">Jellyfin user ID.</param>
+    /// <param name="playlistName">Name for the playlist.</param>
+    /// <param name="maxTracks">Maximum number of tracks.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>Playlist creation result.</returns>
+    Task<PlaylistResult> CreateTagDiscoveryPlaylistAsync(
+        Guid userId,
+        string playlistName,
+        int maxTracks = 50,
+        CancellationToken cancellationToken = default);
 }
 
 /// <summary>
