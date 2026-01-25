@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>Last.fm Scrobbler Configuration</title>
+</head>
+<body>
+    <div id="lastfmConfigPage" data-role="page" class="page type-interior pluginConfigurationPage">
+        <div data-role="content">
+            <div class="content-primary">
+                <form id="lastfmConfigForm">
+                    <h2>Last.fm Scrobbler Settings</h2>
+                    <p>Configure Last.fm scrobbling for your Emby users.</p>
+
+                    <div class="detailSection">
+                        <h3>Last.fm Users</h3>
+                        <div id="lastfmUsers"></div>
+                        <button type="button" class="raised button-submit" id="addUser">
+                            <span>Add User</span>
+                        </button>
+                    </div>
+
+                    <div class="detailSection">
+                        <h3>About</h3>
+                        <p>This plugin scrobbles your music listening activity to Last.fm.</p>
+                        <ul>
+                            <li>✅ Automatic scrobbling (30s minimum, 50% or 4min played)</li>
+                            <li>✅ Now Playing updates</li>
+                            <li>✅ Loved tracks synchronization</li>
+                            <li>✅ Play count import</li>
+                            <li>✅ Smart playlist generation</li>
+                        </ul>
+                    </div>
+
+                    <button type="submit" class="raised button-submit">
+                        <span>Save</span>
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script type="text/javascript">
+        (function () {
+            var pluginId = "5e7fe7f0-b048-429e-a431-b1a7e69c931d";
+
+            ApiClient.getPluginConfiguration(pluginId).then(function (config) {
+                // Load configuration
+                renderUsers(config.LastfmUsers || []);
+            });
+
+            function renderUsers(users) {
+                var html = '';
+                users.forEach(function (user, index) {
+                    html += '<div class="lastfmUser">';
+                    html += '<p><strong>Emby User:</strong> ' + user.MediaBrowserUserId + '</p>';
+                    html += '<p><strong>Last.fm User:</strong> ' + user.LastfmUsername + '</p>';
+                    html += '<button type="button" class="raised button-cancel" onclick="removeUser(' + index + ')">Remove</button>';
+                    html += '</div><hr>';
+                });
+                document.getElementById('lastfmUsers').innerHTML = html;
+            }
+
+            document.getElementById('lastfmConfigForm').addEventListener('submit', function (e) {
+                e.preventDefault();
+                Dashboard.showLoadingMsg();
+
+                ApiClient.getPluginConfiguration(pluginId).then(function (config) {
+                    ApiClient.updatePluginConfiguration(pluginId, config).then(function () {
+                        Dashboard.hideLoadingMsg();
+                        Dashboard.alert('Settings saved');
+                    });
+                });
+            });
+
+            document.getElementById('addUser').addEventListener('click', function () {
+                // TODO: Implement user addition dialog
+                Dashboard.alert('User addition coming soon');
+            });
+        })();
+    </script>
+</body>
+</html>

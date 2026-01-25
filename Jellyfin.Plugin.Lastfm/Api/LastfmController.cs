@@ -1,18 +1,19 @@
 // GPL-2.0 License
 // https://github.com/lusoris/jellyfin-plugin-lastfm
 
-namespace Jellyfin.Plugin.Lastfm.Api;
-
 using System.ComponentModel.DataAnnotations;
+using System.Linq;
 using System.Net.Mime;
-using Configuration;
+using Jellyfin.Plugin.Lastfm.Configuration;
+using Jellyfin.Plugin.Lastfm.Models;
+using Jellyfin.Plugin.Lastfm.Services;
+using Lastfm.Scrobbler.Core.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
-using Models;
-using Queue;
-using Services;
+
+namespace Jellyfin.Plugin.Lastfm.Api;
 
 /// <summary>
 /// REST API controller for Last.fm integration.
@@ -24,7 +25,7 @@ using Services;
 public sealed partial class LastfmController : ControllerBase
 {
     private readonly ILastfmApiClient _lastfmApiClient;
-    private readonly IScrobbleQueue _scrobbleQueue;
+    private readonly global::Lastfm.Scrobbler.Core.Interfaces.IScrobbleQueue<Scrobble, Guid> _scrobbleQueue;
     private readonly IPlaylistService _playlistService;
     private readonly ILogger<LastfmController> _logger;
 
@@ -37,7 +38,7 @@ public sealed partial class LastfmController : ControllerBase
     /// <param name="logger">Logger.</param>
     public LastfmController(
         ILastfmApiClient lastfmApiClient,
-        IScrobbleQueue scrobbleQueue,
+        global::Lastfm.Scrobbler.Core.Interfaces.IScrobbleQueue<Scrobble, Guid> scrobbleQueue,
         IPlaylistService playlistService,
         ILogger<LastfmController> logger)
     {
@@ -64,7 +65,7 @@ public sealed partial class LastfmController : ControllerBase
             return BadRequest(new AuthenticationResult { Success = false, Error = "Plugin not initialized" });
         }
 
-        if (!plugin.Configuration.IsConfigured)
+        if (!plugin.Configuration.IsConfigured())
         {
             return BadRequest(new AuthenticationResult { Success = false, Error = "Plugin API credentials not configured" });
         }
@@ -105,7 +106,7 @@ public sealed partial class LastfmController : ControllerBase
     [HttpGet("Status/{userId}")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<ActionResult<UserStatus>> GetStatus([FromRoute] Guid userId)
+    public ActionResult<UserStatus> GetStatus([FromRoute] Guid userId)
     {
         var plugin = Plugin.Instance;
         if (plugin == null)
@@ -115,7 +116,7 @@ public sealed partial class LastfmController : ControllerBase
 
         var user = plugin.Configuration.GetUserConfig(userId);
 
-        var pendingScrobbles = await _scrobbleQueue.GetPendingAsync(userId).ConfigureAwait(false);
+        var pendingScrobbles = _scrobbleQueue.GetPending(userId);
 
         return Ok(new UserStatus
         {
@@ -124,9 +125,7 @@ public sealed partial class LastfmController : ControllerBase
             ScrobbleEnabled = user?.Options.ScrobbleEnabled ?? false,
             NowPlayingEnabled = user?.Options.NowPlayingEnabled ?? false,
             SyncFavoritesToLoved = user?.Options.SyncFavoritesToLoved ?? false,
-            ImportLovedTracks = user?.Options.ImportLovedTracks ?? false,
-            ImportPlayCounts = user?.Options.ImportPlayCounts ?? false,
-            PendingScrobbleCount = pendingScrobbles.Count
+            PendingScrobbleCount = pendingScrobbles.Count()
         });
     }
 
@@ -169,18 +168,18 @@ public sealed partial class LastfmController : ControllerBase
     /// <returns>Queue information.</returns>
     [HttpGet("Queue/{userId}")]
     [ProducesResponseType(StatusCodes.Status200OK)]
-    public async Task<ActionResult<QueueStatus>> GetQueue([FromRoute] Guid userId)
+    public ActionResult<QueueStatus> GetQueue([FromRoute] Guid userId)
     {
-        var pending = await _scrobbleQueue.GetPendingAsync(userId).ConfigureAwait(false);
-        var totalPending = await _scrobbleQueue.GetTotalPendingCountAsync().ConfigureAwait(false);
+        var pending = _scrobbleQueue.GetPending(userId);
+        var totalPending = _scrobbleQueue.GetTotalPendingCount();
 
         return Ok(new QueueStatus
         {
             UserId = userId,
-            PendingCount = pending.Count,
+            PendingCount = pending.Count(),
             TotalPendingCount = totalPending,
-            OldestScrobble = pending.Count > 0 ? pending.Min(s => s.Timestamp) : null,
-            NewestScrobble = pending.Count > 0 ? pending.Max(s => s.Timestamp) : null
+            OldestScrobble = pending.Any() ? pending.Min(s => s.Timestamp) : null,
+            NewestScrobble = pending.Any() ? pending.Max(s => s.Timestamp) : null
         });
     }
 
@@ -327,45 +326,16 @@ public sealed partial class LastfmController : ControllerBase
         }
         else
         {
-            var users = config.LastfmUsers.ToList();
-            users.Add(new LastfmUser
+            config.LastfmUsers.Add(new global::Lastfm.Scrobbler.Core.Models.LastfmUser
             {
                 JellyfinUserId = jellyfinUserId,
                 Username = username,
                 SessionKey = sessionKey
             });
-            config.LastfmUsers = users.ToArray();
         }
 
         plugin.SaveConfiguration();
     }
-
-    [LoggerMessage(Level = LogLevel.Information, Message = "Authenticating user {UserId} with Last.fm username {LastfmUsername}")]
-    private partial void LogAuthenticating(Guid userId, string lastfmUsername);
-
-    [LoggerMessage(Level = LogLevel.Warning, Message = "Last.fm authentication failed for {Username}: {Error}")]
-    private partial void LogAuthenticationFailed(string username, string error);
-
-    [LoggerMessage(Level = LogLevel.Information, Message = "Last.fm authentication successful for {Username}")]
-    private partial void LogAuthenticationSuccess(string username);
-
-    [LoggerMessage(Level = LogLevel.Information, Message = "Disconnecting user {UserId} from Last.fm account {Username}")]
-    private partial void LogDisconnecting(Guid userId, string username);
-
-    [LoggerMessage(Level = LogLevel.Information, Message = "Creating similar artists playlist for user {UserId}")]
-    private partial void LogCreatingSimilarArtistsPlaylist(Guid userId);
-
-    [LoggerMessage(Level = LogLevel.Information, Message = "Creating similar tracks playlist for user {UserId}")]
-    private partial void LogCreatingSimilarTracksPlaylist(Guid userId);
-
-    [LoggerMessage(Level = LogLevel.Information, Message = "Creating rediscover favorites playlist for user {UserId}")]
-    private partial void LogCreatingRediscoverPlaylist(Guid userId);
-
-    [LoggerMessage(Level = LogLevel.Information, Message = "Creating weekly mixtape for user {UserId}")]
-    private partial void LogCreatingWeeklyMixtape(Guid userId);
-
-    [LoggerMessage(Level = LogLevel.Information, Message = "Creating tag discovery playlist for user {UserId}")]
-    private partial void LogCreatingTagDiscoveryPlaylist(Guid userId);
 }
 
 /// <summary>
@@ -442,16 +412,6 @@ public class UserStatus
     /// Gets or sets a value indicating whether favorites sync to loved.
     /// </summary>
     public bool SyncFavoritesToLoved { get; set; }
-
-    /// <summary>
-    /// Gets or sets a value indicating whether loved tracks are imported.
-    /// </summary>
-    public bool ImportLovedTracks { get; set; }
-
-    /// <summary>
-    /// Gets or sets a value indicating whether play counts are imported.
-    /// </summary>
-    public bool ImportPlayCounts { get; set; }
 
     /// <summary>
     /// Gets or sets the number of pending scrobbles in queue.

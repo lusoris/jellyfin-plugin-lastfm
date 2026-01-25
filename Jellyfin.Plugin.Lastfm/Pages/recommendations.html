@@ -9,9 +9,9 @@
         .lastfm-header h1 { margin: 0; display: flex; align-items: center; gap: 0.5em; }
         .lastfm-header .icon { font-size: 1.5em; }
         .lastfm-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 1.5em; }
-        .lastfm-card {
-            background: rgba(255,255,255,0.05);
-            border-radius: 8px;
+        .lastfm-card { 
+            background: rgba(255,255,255,0.05); 
+            border-radius: 8px; 
             padding: 1.5em;
             transition: transform 0.2s, box-shadow 0.2s;
         }
@@ -96,38 +96,6 @@
                         </button>
                         <div id="rediscoverResult" class="lastfm-result"></div>
                     </div>
-
-                    <!-- Weekly Mixtape -->
-                    <div class="lastfm-card">
-                        <h3>📅 Weekly Mixtape</h3>
-                        <p>A fresh mix based on your recent listening. Combines your current favorites with similar discoveries.</p>
-                        <div class="lastfm-input">
-                            <input is="emby-input" type="text" id="weeklyMixtapeName" label="Playlist Name:" value="Weekly Mixtape" />
-                        </div>
-                        <div class="lastfm-input">
-                            <input is="emby-input" type="number" id="weeklyMixtapeCount" label="Max Tracks:" value="50" min="10" max="200" />
-                        </div>
-                        <button is="emby-button" type="button" class="raised button-submit" onclick="createWeeklyMixtapePlaylist()">
-                            <span>Create Playlist</span>
-                        </button>
-                        <div id="weeklyMixtapeResult" class="lastfm-result"></div>
-                    </div>
-
-                    <!-- Tag Discovery -->
-                    <div class="lastfm-card">
-                        <h3>🏷️ Tag Discovery</h3>
-                        <p>Explore your favorite genres! Based on tags you've used most on Last.fm.</p>
-                        <div class="lastfm-input">
-                            <input is="emby-input" type="text" id="tagDiscoveryName" label="Playlist Name:" value="Tag Discovery" />
-                        </div>
-                        <div class="lastfm-input">
-                            <input is="emby-input" type="number" id="tagDiscoveryCount" label="Max Tracks:" value="50" min="10" max="200" />
-                        </div>
-                        <button is="emby-button" type="button" class="raised button-submit" onclick="createTagDiscoveryPlaylist()">
-                            <span>Create Playlist</span>
-                        </button>
-                        <div id="tagDiscoveryResult" class="lastfm-result"></div>
-                    </div>
                 </div>
             </div>
         </div>
@@ -144,7 +112,7 @@
                     const users = await ApiClient.getUsers();
                     const select = document.getElementById('selectUser');
                     select.innerHTML = users.map(u => `<option value="${u.Id}">${u.Name}</option>`).join('');
-
+                    
                     if (users.length > 0) {
                         currentUserId = users[0].Id;
                         select.addEventListener('change', (e) => {
@@ -165,7 +133,7 @@
                         url: ApiClient.getUrl('Lastfm/Status/' + currentUserId),
                         type: 'GET'
                     });
-
+                    
                     if (response.IsConnected) {
                         statusEl.innerHTML = `✓ Connected as <strong>${response.Username}</strong>`;
                         statusEl.style.color = '#52b54b';
@@ -197,25 +165,13 @@
                 await createPlaylist('RediscoverFavorites', name, maxTracks, 'rediscoverResult');
             }
 
-            async function createWeeklyMixtapePlaylist() {
-                const name = document.getElementById('weeklyMixtapeName').value;
-                const maxTracks = parseInt(document.getElementById('weeklyMixtapeCount').value);
-                await createPlaylist('WeeklyMixtape', name, maxTracks, 'weeklyMixtapeResult');
-            }
-
-            async function createTagDiscoveryPlaylist() {
-                const name = document.getElementById('tagDiscoveryName').value;
-                const maxTracks = parseInt(document.getElementById('tagDiscoveryCount').value);
-                await createPlaylist('TagDiscovery', name, maxTracks, 'tagDiscoveryResult');
-            }
-
             async function createPlaylist(type, playlistName, maxTracks, resultElementId) {
                 const resultEl = document.getElementById(resultElementId);
                 resultEl.className = 'lastfm-result';
                 resultEl.style.display = 'none';
 
                 Dashboard.showLoadingMsg();
-
+                
                 try {
                     const response = await ApiClient.fetch({
                         url: ApiClient.getUrl('Lastfm/Playlists/' + type),

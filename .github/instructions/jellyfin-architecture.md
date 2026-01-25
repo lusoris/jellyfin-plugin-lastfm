@@ -386,3 +386,12 @@ These interfaces are automatically discovered by Jellyfin at startup. Just imple
 | `IZipClient` | Compression/decompression |
 
 **Source**: [Jellyfin Plugin Template](https://github.com/jellyfin/jellyfin-plugin-template)
+
+---
+
+**Related:**
+- [jellyfin-api.index.md](jellyfin-api.index.md) - API interfaces reference
+- [jellyfin-configuration.md](jellyfin-configuration.md) - Configuration system
+- [jellyfin-models.md](jellyfin-models.md) - Data models
+- [emby/emby-architecture.md](emby/emby-architecture.md) - Emby equivalent architecture
+- [workflow/development-workflow.md](workflow/development-workflow.md) - Development practices

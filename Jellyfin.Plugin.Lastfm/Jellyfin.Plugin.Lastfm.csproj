@@ -21,10 +21,11 @@
       CA1805: Don't initialize with default value - clearer code
       CA1819: Properties shouldn't return arrays - needed for config
       CA1826: Use indexer instead of First() - minor perf
+      CA1860: Prefer Count comparison - .Any() is more readable
       CA2227: Collection properties should be read only - JSON deserialization needs setters
       CA5351: MD5 is broken - Required by Last.fm API, not used for security
     -->
-    <NoWarn>CA1002;CA1056;CA1711;CA1805;CA1819;CA1826;CA2227;CA5351</NoWarn>
+    <NoWarn>CA1002;CA1056;CA1711;CA1805;CA1819;CA1826;CA1860;CA2227;CA5351</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>
@@ -38,8 +39,12 @@
     <PackageReference Include="Jellyfin.Controller" Version="10.*-*">
       <ExcludeAssets>runtime</ExcludeAssets>
     </PackageReference>
-    <!-- Microsoft.Extensions.Http is NOT provided by Jellyfin, so we include it -->
-    <PackageReference Include="Microsoft.Extensions.Http" Version="9.0.4" />
+    <PackageReference Include="Microsoft.Extensions.Http" Version="9.0.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Lastfm.Scrobbler.Core\Lastfm.Scrobbler.Core.csproj" />
+    <ProjectReference Include="..\Lastfm.Scrobbler.Abstractions\Lastfm.Scrobbler.Abstractions.csproj" />
   </ItemGroup>
 
 </Project>

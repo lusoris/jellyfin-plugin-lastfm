@@ -43,31 +43,6 @@ public sealed partial class PlaylistService : IPlaylistService
         _logger = logger;
     }
 
-    /// <summary>
-    /// Validates user and returns validated context, or null with error result.
-    /// Returns tuple of (jellyfinUser, lastfmUser) if valid.
-    /// </summary>
-    private bool TryValidateUser(Guid userId, out PlaylistResult? errorResult, out LastfmUser? lastfmUser)
-    {
-        lastfmUser = null;
-        var user = _userManager.GetUserById(userId);
-        if (user == null)
-        {
-            errorResult = PlaylistResult.FailureResult("User not found");
-            return false;
-        }
-
-        lastfmUser = Plugin.Instance?.Configuration.GetUserConfig(userId);
-        if (lastfmUser == null || string.IsNullOrEmpty(lastfmUser.Username))
-        {
-            errorResult = PlaylistResult.FailureResult("User not connected to Last.fm");
-            return false;
-        }
-
-        errorResult = null;
-        return true;
-    }
-
     /// <inheritdoc />
     public async Task<PlaylistResult> CreateSimilarArtistsPlaylistAsync(
         Guid userId,
@@ -75,12 +50,19 @@ public sealed partial class PlaylistService : IPlaylistService
         int maxTracks = 50,
         CancellationToken cancellationToken = default)
     {
-        if (!TryValidateUser(userId, out var errorResult, out var lastfmUser))
+        var user = _userManager.GetUserById(userId);
+        if (user == null)
         {
-            return errorResult!;
+            return PlaylistResult.FailureResult("User not found");
         }
 
-        LogCreatingSimilarArtistsPlaylist(lastfmUser!.Username);
+        var lastfmUser = Plugin.Instance?.Configuration.GetUserConfig(userId);
+        if (lastfmUser == null || string.IsNullOrEmpty(lastfmUser.Username))
+        {
+            return PlaylistResult.FailureResult("User not connected to Last.fm");
+        }
+
+        LogCreatingSimilarArtistsPlaylist(lastfmUser.Username);
 
         // Get user's top artists from Last.fm
         var topArtistsResponse = await _lastfmApiClient.GetTopTracksAsync(
@@ -102,7 +84,7 @@ public sealed partial class PlaylistService : IPlaylistService
             .Take(5)
             .ToList();
 
-        var trackIds = new HashSet<Guid>();
+        var trackIds = new List<Guid>();
 
         foreach (var artistName in topArtists)
         {
@@ -128,7 +110,7 @@ public sealed partial class PlaylistService : IPlaylistService
                 var localTracks = FindTracksByArtist(similarArtist.Name, userId);
                 foreach (var track in localTracks.Take(3))
                 {
-                    if (trackIds.Count < maxTracks)
+                    if (!trackIds.Contains(track.Id) && trackIds.Count < maxTracks)
                     {
                         trackIds.Add(track.Id);
                     }
@@ -142,7 +124,7 @@ public sealed partial class PlaylistService : IPlaylistService
         }
 
         // Create the playlist
-        return await CreatePlaylistAsync(userId, playlistName, trackIds.ToList()).ConfigureAwait(false);
+        return await CreatePlaylistAsync(userId, playlistName, trackIds).ConfigureAwait(false);
     }
 
     /// <inheritdoc />
@@ -152,12 +134,19 @@ public sealed partial class PlaylistService : IPlaylistService
         int maxTracks = 50,
         CancellationToken cancellationToken = default)
     {
-        if (!TryValidateUser(userId, out var errorResult, out var lastfmUser))
+        var user = _userManager.GetUserById(userId);
+        if (user == null)
         {
-            return errorResult!;
+            return PlaylistResult.FailureResult("User not found");
         }
 
-        LogCreatingSimilarTracksPlaylist(lastfmUser!.Username);
+        var lastfmUser = Plugin.Instance?.Configuration.GetUserConfig(userId);
+        if (lastfmUser == null || string.IsNullOrEmpty(lastfmUser.Username))
+        {
+            return PlaylistResult.FailureResult("User not connected to Last.fm");
+        }
+
+        LogCreatingSimilarTracksPlaylist(lastfmUser.Username);
 
         // Get user's loved tracks from Last.fm
         var lovedTracksResponse = await _lastfmApiClient.GetLovedTracksAsync(
@@ -170,7 +159,7 @@ public sealed partial class PlaylistService : IPlaylistService
             return PlaylistResult.FailureResult("No loved tracks found");
         }
 
-        var trackIds = new HashSet<Guid>();
+        var trackIds = new List<Guid>();
 
         // Get similar tracks for each loved track
         foreach (var lovedTrack in lovedTracksResponse.LovedTracks.Tracks.Take(10))
@@ -205,7 +194,7 @@ public sealed partial class PlaylistService : IPlaylistService
                 }
 
                 var localTrack = FindTrack(similarTrack.Artist.Name, similarTrack.Name, userId);
-                if (localTrack != null && trackIds.Count < maxTracks)
+                if (localTrack != null && !trackIds.Contains(localTrack.Id) && trackIds.Count < maxTracks)
                 {
                     trackIds.Add(localTrack.Id);
                 }
@@ -217,7 +206,7 @@ public sealed partial class PlaylistService : IPlaylistService
             return PlaylistResult.FailureResult("No matching tracks found in library");
         }
 
-        return await CreatePlaylistAsync(userId, playlistName, trackIds.ToList()).ConfigureAwait(false);
+        return await CreatePlaylistAsync(userId, playlistName, trackIds).ConfigureAwait(false);
     }
 
     /// <inheritdoc />
@@ -227,13 +216,19 @@ public sealed partial class PlaylistService : IPlaylistService
         int maxTracks = 50,
         CancellationToken cancellationToken = default)
     {
-        if (!TryValidateUser(userId, out var errorResult, out var lastfmUser))
+        var user = _userManager.GetUserById(userId);
+        if (user == null)
         {
-            return errorResult!;
+            return PlaylistResult.FailureResult("User not found");
         }
 
-        var user = _userManager.GetUserById(userId)!;
-        LogCreatingRediscoverFavoritesPlaylist(lastfmUser!.Username);
+        var lastfmUser = Plugin.Instance?.Configuration.GetUserConfig(userId);
+        if (lastfmUser == null || string.IsNullOrEmpty(lastfmUser.Username))
+        {
+            return PlaylistResult.FailureResult("User not connected to Last.fm");
+        }
+
+        LogCreatingRediscoverPlaylist(lastfmUser.Username);
 
         // Get user's loved tracks
         var lovedTracksResponse = await _lastfmApiClient.GetLovedTracksAsync(
@@ -246,7 +241,7 @@ public sealed partial class PlaylistService : IPlaylistService
             return PlaylistResult.FailureResult("No loved tracks found");
         }
 
-        var trackIds = new HashSet<Guid>();
+        var trackIds = new List<Guid>();
 
         // Find loved tracks that exist in library and haven't been played recently
         foreach (var lovedTrack in lovedTracksResponse.LovedTracks.Tracks)
@@ -277,10 +272,10 @@ public sealed partial class PlaylistService : IPlaylistService
         }
 
         // Shuffle the tracks
-        var random = Random.Shared;
-        var shuffledTracks = trackIds.OrderBy(_ => random.Next()).Take(maxTracks).ToList();
+        var random = new Random();
+        trackIds = trackIds.OrderBy(_ => random.Next()).Take(maxTracks).ToList();
 
-        return await CreatePlaylistAsync(userId, playlistName, shuffledTracks).ConfigureAwait(false);
+        return await CreatePlaylistAsync(userId, playlistName, trackIds).ConfigureAwait(false);
     }
 
     /// <inheritdoc />
@@ -290,12 +285,19 @@ public sealed partial class PlaylistService : IPlaylistService
         int maxTracks = 50,
         CancellationToken cancellationToken = default)
     {
-        if (!TryValidateUser(userId, out var errorResult, out var lastfmUser))
+        var user = _userManager.GetUserById(userId);
+        if (user == null)
         {
-            return errorResult!;
+            return PlaylistResult.FailureResult("User not found");
         }
 
-        LogCreatingWeeklyMixtape(lastfmUser!.Username);
+        var lastfmUser = Plugin.Instance?.Configuration.GetUserConfig(userId);
+        if (lastfmUser == null || string.IsNullOrEmpty(lastfmUser.Username))
+        {
+            return PlaylistResult.FailureResult("User not connected to Last.fm");
+        }
+
+        LogCreatingWeeklyMixtape(lastfmUser.Username);
 
         // Get user's weekly track chart (current week)
         var weeklyChartResponse = await _lastfmApiClient.GetWeeklyTrackChartAsync(
@@ -308,7 +310,7 @@ public sealed partial class PlaylistService : IPlaylistService
             return PlaylistResult.FailureResult("No weekly listening data found");
         }
 
-        var trackIds = new HashSet<Guid>();
+        var trackIds = new List<Guid>();
         var recentArtists = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
         // First, add some tracks from this week
@@ -320,12 +322,10 @@ public sealed partial class PlaylistService : IPlaylistService
             }
 
             var localTrack = FindTrack(chartTrack.Artist.Name, chartTrack.Name, userId);
-            if (localTrack != null)
+            if (localTrack != null && !trackIds.Contains(localTrack.Id))
             {
-                if (trackIds.Add(localTrack.Id))
-                {
-                    recentArtists.Add(chartTrack.Artist.Name);
-                }
+                trackIds.Add(localTrack.Id);
+                recentArtists.Add(chartTrack.Artist.Name);
             }
         }
 
@@ -352,7 +352,7 @@ public sealed partial class PlaylistService : IPlaylistService
                 var localTracks = FindTracksByArtist(similarArtist.Name, userId);
                 foreach (var track in localTracks.Take(2))
                 {
-                    if (trackIds.Count < maxTracks)
+                    if (!trackIds.Contains(track.Id) && trackIds.Count < maxTracks)
                     {
                         trackIds.Add(track.Id);
                     }
@@ -366,9 +366,10 @@ public sealed partial class PlaylistService : IPlaylistService
         }
 
         // Shuffle for variety
-        var shuffledTracks = trackIds.OrderBy(_ => Random.Shared.Next()).ToList();
+        var random = new Random();
+        trackIds = trackIds.OrderBy(_ => random.Next()).ToList();
 
-        return await CreatePlaylistAsync(userId, playlistName, shuffledTracks).ConfigureAwait(false);
+        return await CreatePlaylistAsync(userId, playlistName, trackIds).ConfigureAwait(false);
     }
 
     /// <inheritdoc />
@@ -378,12 +379,19 @@ public sealed partial class PlaylistService : IPlaylistService
         int maxTracks = 50,
         CancellationToken cancellationToken = default)
     {
-        if (!TryValidateUser(userId, out var errorResult, out var lastfmUser))
+        var user = _userManager.GetUserById(userId);
+        if (user == null)
         {
-            return errorResult!;
+            return PlaylistResult.FailureResult("User not found");
         }
 
-        LogCreatingTagDiscoveryPlaylist(lastfmUser!.Username);
+        var lastfmUser = Plugin.Instance?.Configuration.GetUserConfig(userId);
+        if (lastfmUser == null || string.IsNullOrEmpty(lastfmUser.Username))
+        {
+            return PlaylistResult.FailureResult("User not connected to Last.fm");
+        }
+
+        LogCreatingTagDiscoveryPlaylist(lastfmUser.Username);
 
         // Get user's top tags
         var topTagsResponse = await _lastfmApiClient.GetUserTopTagsAsync(
@@ -396,7 +404,7 @@ public sealed partial class PlaylistService : IPlaylistService
             return PlaylistResult.FailureResult("No tags found for user");
         }
 
-        var trackIds = new HashSet<Guid>();
+        var trackIds = new List<Guid>();
         var addedTracks = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
         // Get top tracks for each of user's favorite tags
@@ -427,16 +435,17 @@ public sealed partial class PlaylistService : IPlaylistService
                 }
 
                 // Create a unique key to avoid duplicates
-                var trackKey = string.Concat(tagTrack.Artist.Name, "|", tagTrack.Name);
-                if (!addedTracks.Add(trackKey))
+                var trackKey = $"{tagTrack.Artist.Name}|{tagTrack.Name}".ToLowerInvariant();
+                if (addedTracks.Contains(trackKey))
                 {
                     continue;
                 }
 
                 var localTrack = FindTrack(tagTrack.Artist.Name, tagTrack.Name, userId);
-                if (localTrack != null)
+                if (localTrack != null && !trackIds.Contains(localTrack.Id))
                 {
                     trackIds.Add(localTrack.Id);
+                    addedTracks.Add(trackKey);
                 }
             }
         }
@@ -447,9 +456,10 @@ public sealed partial class PlaylistService : IPlaylistService
         }
 
         // Shuffle to mix tags
-        var shuffledTracks = trackIds.OrderBy(_ => Random.Shared.Next()).ToList();
+        var random = new Random();
+        trackIds = trackIds.OrderBy(_ => random.Next()).ToList();
 
-        return await CreatePlaylistAsync(userId, playlistName, shuffledTracks).ConfigureAwait(false);
+        return await CreatePlaylistAsync(userId, playlistName, trackIds).ConfigureAwait(false);
     }
 
     private async Task<PlaylistResult> CreatePlaylistAsync(Guid userId, string playlistName, List<Guid> trackIds)
@@ -467,14 +477,13 @@ public sealed partial class PlaylistService : IPlaylistService
 
             var result = await _playlistManager.CreatePlaylist(request).ConfigureAwait(false);
 
-            LogCreatedPlaylist(playlistName, trackIds.Count);
-
             var playlistId = Guid.Parse(result.Id);
+            LogPlaylistCreated(playlistName, trackIds.Count, userId);
             return PlaylistResult.SuccessResult(playlistId, playlistName, trackIds.Count);
         }
         catch (Exception ex)
         {
-            LogFailedToCreatePlaylist(ex, playlistName);
+            LogPlaylistCreationFailed(ex, playlistName);
             return PlaylistResult.FailureResult($"Failed to create playlist: {ex.Message}");
         }
     }
@@ -535,28 +544,4 @@ public sealed partial class PlaylistService : IPlaylistService
             return [];
         }
     }
-
-    [LoggerMessage(Level = LogLevel.Information, Message = "Creating similar artists playlist for {Username}")]
-    private partial void LogCreatingSimilarArtistsPlaylist(string username);
-
-    [LoggerMessage(Level = LogLevel.Information, Message = "Creating similar tracks playlist for {Username}")]
-    private partial void LogCreatingSimilarTracksPlaylist(string username);
-
-    [LoggerMessage(Level = LogLevel.Information, Message = "Creating rediscover favorites playlist for {Username}")]
-    private partial void LogCreatingRediscoverFavoritesPlaylist(string username);
-
-    [LoggerMessage(Level = LogLevel.Information, Message = "Creating weekly mixtape for {Username}")]
-    private partial void LogCreatingWeeklyMixtape(string username);
-
-    [LoggerMessage(Level = LogLevel.Information, Message = "Creating tag discovery playlist for {Username}")]
-    private partial void LogCreatingTagDiscoveryPlaylist(string username);
-
-    [LoggerMessage(Level = LogLevel.Debug, Message = "Fetching tracks for tag: {Tag}")]
-    private partial void LogFetchingTracksForTag(string tag);
-
-    [LoggerMessage(Level = LogLevel.Information, Message = "Created playlist '{PlaylistName}' with {TrackCount} tracks")]
-    private partial void LogCreatedPlaylist(string playlistName, int trackCount);
-
-    [LoggerMessage(Level = LogLevel.Error, Message = "Failed to create playlist '{PlaylistName}'")]
-    private partial void LogFailedToCreatePlaylist(Exception ex, string playlistName);
 }

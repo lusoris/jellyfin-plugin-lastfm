@@ -1,15 +1,15 @@
 # Jellyfin Last.fm Plugin
 
-[![Build](https://github.com/lusoris/jellyfin-plugin-lastfm/actions/workflows/build-plugin.yaml/badge.svg)](https://github.com/lusoris/jellyfin-plugin-lastfm/actions/workflows/build-plugin.yaml)
-[![Release](https://img.shields.io/github/v/release/lusoris/jellyfin-plugin-lastfm)](https://github.com/lusoris/jellyfin-plugin-lastfm/releases/latest)
+[![Build](https://github.com/jesseward/jellyfin-plugin-lastfm/actions/workflows/build-plugin.yaml/badge.svg)](https://github.com/jesseward/jellyfin-plugin-lastfm/actions/workflows/build-plugin.yaml)
+[![Release](https://img.shields.io/github/v/release/jesseward/jellyfin-plugin-lastfm)](https://github.com/jesseward/jellyfin-plugin-lastfm/releases/latest)
 [![.NET](https://img.shields.io/badge/.NET-9.0-512BD4)](https://dotnet.microsoft.com/)
 [![Jellyfin](https://img.shields.io/badge/Jellyfin-10.11.6-00A4DC)](https://jellyfin.org/)
 [![License](https://img.shields.io/badge/License-GPL--2.0-blue.svg)](LICENSE)
-[![GitHub Stars](https://img.shields.io/github/stars/lusoris/jellyfin-plugin-lastfm)](https://github.com/lusoris/jellyfin-plugin-lastfm/stargazers)
+[![GitHub Stars](https://img.shields.io/github/stars/jesseward/jellyfin-plugin-lastfm)](https://github.com/jesseward/jellyfin-plugin-lastfm/stargazers)
 
-> **Fork Notice**: This is a maintained fork of [jesseward/jellyfin-plugin-lastfm](https://github.com/jesseward/jellyfin-plugin-lastfm), which was archived on 2026-01-31.
+> **Note**: This plugin is being refactored to support multiple media servers, including Jellyfin, Emby, and Plex.
 
-Scrobble your Jellyfin music playback to [Last.fm](https://www.last.fm/), sync loved tracks, and fetch artist/album metadata.
+Scrobble your music playback to [Last.fm](https://www.last.fm/), sync loved tracks, and fetch artist/album metadata across different media servers.
 
 ## ✨ Features
 
@@ -37,12 +37,12 @@ Scrobble your Jellyfin music playback to [Last.fm](https://www.last.fm/), sync l
 
 ## 🔧 Installation
 
-### Option 1: Plugin Repository (Recommended)
+### Option 1: Plugin Repository (Recommended for Jellyfin)
 
 Add this repository URL to Jellyfin's Plugin Repositories:
 
 ```
-https://raw.githubusercontent.com/lusoris/jellyfin-plugin-lastfm/main/manifest.json
+https://raw.githubusercontent.com/jesseward/jellyfin-plugin-lastfm/main/manifest.json
 ```
 
 **Steps:**
@@ -55,9 +55,9 @@ https://raw.githubusercontent.com/lusoris/jellyfin-plugin-lastfm/main/manifest.j
 
 ### Option 2: Manual Installation
 
-1. Download the ZIP from the [latest release](https://github.com/lusoris/jellyfin-plugin-lastfm/releases/latest)
-2. Extract `Jellyfin.Plugin.Lastfm.dll` from the ZIP
-3. Copy the DLL to your Jellyfin plugins directory:
+1. Download the `plugin.zip` from the [latest release](https://github.com/jesseward/jellyfin-plugin-lastfm/releases/latest)
+2. Extract the contents of the ZIP file.
+3. Copy the extracted files into your Jellyfin plugins directory, maintaining the folder structure. For Jellyfin, you should have a `Lastfm` folder inside your plugins directory.
 
 | Platform | Path |
 |----------|------|

@@ -3,219 +3,183 @@
 
 namespace Jellyfin.Plugin.Lastfm.Services;
 
-using System.Text.RegularExpressions;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 using Jellyfin.Data.Enums;
+using Jellyfin.Plugin.Lastfm.Interfaces;
 using MediaBrowser.Controller.Entities;
 using MediaBrowser.Controller.Entities.Audio;
 using MediaBrowser.Controller.Library;
 using MediaBrowser.Model.Entities;
-using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
 
 /// <summary>
-/// Matches Jellyfin tracks to Last.fm tracks.
+/// Matches Last.fm tracks to Jellyfin library items.
 /// </summary>
-public sealed partial class TrackMatcherService : ITrackMatcherService, IDisposable
+public sealed partial class TrackMatcherService : ITrackMatcherService
 {
-    /// <summary>
-    /// Cache duration for MusicBrainz ID lookups.
-    /// </summary>
-    private static readonly TimeSpan MbidCacheDuration = TimeSpan.FromMinutes(30);
-
-    /// <summary>
-    /// Cache duration for negative (not found) lookups - shorter to allow retries.
-    /// </summary>
-    private static readonly TimeSpan NegativeCacheDuration = TimeSpan.FromMinutes(5);
-
     private readonly ILibraryManager _libraryManager;
+    private readonly IUserManager _userManager;
+    private readonly LibraryCacheService _cacheService;
     private readonly ILogger<TrackMatcherService> _logger;
-    private readonly MemoryCache _mbidCache;
-    private bool _disposed;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="TrackMatcherService"/> class.
     /// </summary>
-    public TrackMatcherService(ILibraryManager libraryManager, ILogger<TrackMatcherService> logger)
+    public TrackMatcherService(
+        ILibraryManager libraryManager,
+        IUserManager userManager,
+        LibraryCacheService cacheService,
+        ILogger<TrackMatcherService> logger)
     {
         _libraryManager = libraryManager;
+        _userManager = userManager;
+        _cacheService = cacheService;
         _logger = logger;
-        _mbidCache = new MemoryCache(new MemoryCacheOptions
-        {
-            SizeLimit = 10000 // Max 10k cached lookups
-        });
     }
 
     /// <inheritdoc />
-    public Task<Audio?> FindMatchingTrackAsync(string lastfmArtist, string lastfmTrack, string? lastfmMbid, Guid userId)
+    public Task<Audio?> FindMatchingTrackAsync(string artist, string track, string? musicBrainzId, Guid userId)
     {
-        // Strategy 1: Try MusicBrainz ID if available
-        if (!string.IsNullOrEmpty(lastfmMbid))
+        var user = _userManager.GetUserById(userId);
+        if (user == null)
         {
-            var mbidMatch = FindByMusicBrainzId(lastfmMbid);
-            if (mbidMatch != null)
+            LogUserNotFound(userId);
+            return Task.FromResult<Audio?>(null);
+        }
+
+        // Try MusicBrainz ID first (most reliable)
+        if (!string.IsNullOrEmpty(musicBrainzId))
+        {
+            var byMbid = _libraryManager.GetItemList(new InternalItemsQuery(user)
             {
-                LogFoundMbidMatch(lastfmArtist, lastfmTrack);
-                return Task.FromResult<Audio?>(mbidMatch);
+                IncludeItemTypes = new[] { BaseItemKind.Audio },
+                HasAnyProviderId = new Dictionary<string, string>
+                {
+                    [MetadataProvider.MusicBrainzRecording.ToString()] = musicBrainzId
+                },
+                Limit = 1
+            }).FirstOrDefault() as Audio;
+
+            if (byMbid != null)
+            {
+                return Task.FromResult<Audio?>(byMbid);
             }
         }
 
-        // Strategy 2: Exact artist + track name match
-        var exactMatch = FindByExactName(lastfmArtist, lastfmTrack);
-        if (exactMatch != null)
+        // Fallback: Match by artist + track name
+        var allTracks = _libraryManager.GetItemList(new InternalItemsQuery(user)
         {
-            LogFoundExactMatch(lastfmArtist, lastfmTrack);
-            return Task.FromResult<Audio?>(exactMatch);
+            IncludeItemTypes = new[] { BaseItemKind.Audio },
+            SearchTerm = track,
+            Limit = 100
+        });
+
+        foreach (var item in allTracks.OfType<Audio>())
+        {
+            var itemArtist = item.Artists?.FirstOrDefault() ?? item.AlbumArtists?.FirstOrDefault();
+            if (string.Equals(itemArtist, artist, StringComparison.OrdinalIgnoreCase) &&
+                string.Equals(item.Name, track, StringComparison.OrdinalIgnoreCase))
+            {
+                return Task.FromResult<Audio?>(item);
+            }
         }
 
-        // Strategy 3: Fuzzy artist + track name match
-        var fuzzyMatch = FindByFuzzyName(lastfmArtist, lastfmTrack);
-        if (fuzzyMatch != null)
-        {
-            LogFoundFuzzyMatch(lastfmArtist, lastfmTrack, fuzzyMatch.Artists.FirstOrDefault(), fuzzyMatch.Name);
-            return Task.FromResult<Audio?>(fuzzyMatch);
-        }
-
-        LogNoMatchFound(lastfmArtist, lastfmTrack);
+        LogTrackNotFound(artist, track);
         return Task.FromResult<Audio?>(null);
     }
 
-    private Audio? FindByMusicBrainzId(string mbid)
+    /// <inheritdoc />
+    public async Task<IReadOnlyDictionary<string, Audio>> FindMatchingTracksAsync(
+        IEnumerable<(string Artist, string Track, string? MusicBrainzId)> tracks,
+        Guid userId,
+        CancellationToken cancellationToken = default)
     {
-        // Check cache first
-        if (_mbidCache.TryGetValue(mbid, out Guid cachedItemId))
+        var trackList = tracks.ToList();
+        LogBatchMatchStart(trackList.Count);
+
+        var user = _userManager.GetUserById(userId);
+        if (user == null)
         {
-            // Negative cache hit (not found marker)
-            if (cachedItemId == Guid.Empty)
-            {
-                return null;
-            }
-
-            // Positive cache hit - retrieve the item
-            var cachedItem = _libraryManager.GetItemById(cachedItemId) as Audio;
-            if (cachedItem != null)
-            {
-                return cachedItem;
-            }
-
-            // Item was deleted - remove from cache
-            _mbidCache.Remove(mbid);
+            LogUserNotFound(userId);
+            return new Dictionary<string, Audio>();
         }
 
-        // Use provider ID filter directly in query for efficiency
-        // Try MusicBrainzRecording first (preferred), then MusicBrainzTrack
-        var result = QueryByProviderId(MetadataProvider.MusicBrainzRecording.ToString(), mbid)
-            ?? QueryByProviderId(MetadataProvider.MusicBrainzTrack.ToString(), mbid);
+        var results = new Dictionary<string, Audio>();
 
-        // Cache the result
-        var cacheOptions = new MemoryCacheEntryOptions
+        // First pass: Try MBID lookups in batch
+        var mbids = trackList
+            .Where(t => !string.IsNullOrEmpty(t.MusicBrainzId))
+            .Select(t => t.MusicBrainzId!)
+            .Distinct()
+            .ToList();
+
+        if (mbids.Any())
         {
-            Size = 1,
-            AbsoluteExpirationRelativeToNow = result != null ? MbidCacheDuration : NegativeCacheDuration
-        };
+            var mbidTracks = await _cacheService.GetTracksByMusicBrainzIdsAsync(mbids, userId, cancellationToken);
 
-        _mbidCache.Set(mbid, result?.Id ?? Guid.Empty, cacheOptions);
-
-        return result;
-    }
-
-    private Audio? QueryByProviderId(string providerName, string mbid)
-    {
-        var query = new InternalItemsQuery
-        {
-            IncludeItemTypes = [BaseItemKind.Audio],
-            Recursive = true,
-            Limit = 1,
-            HasAnyProviderId = new Dictionary<string, string>
+            foreach (var track in trackList.Where(t => !string.IsNullOrEmpty(t.MusicBrainzId)))
             {
-                [providerName] = mbid
+                var matched = mbidTracks.FirstOrDefault(mt =>
+                    mt.GetProviderId(MetadataProvider.MusicBrainzRecording) == track.MusicBrainzId);
+
+                if (matched != null)
+                {
+                    var key = $"{track.Artist}:{track.Track}";
+                    results[key] = matched;
+                }
             }
-        };
-
-        return _libraryManager.GetItemList(query)
-            .OfType<Audio>()
-            .FirstOrDefault();
-    }
-
-    private Audio? FindByExactName(string artist, string track)
-    {
-        var query = new InternalItemsQuery
-        {
-            IncludeItemTypes = [BaseItemKind.Audio],
-            Recursive = true,
-            SearchTerm = track
-        };
-
-        var items = _libraryManager.GetItemList(query);
-
-        return items
-            .OfType<Audio>()
-            .FirstOrDefault(a =>
-                string.Equals(a.Name, track, StringComparison.OrdinalIgnoreCase) &&
-                a.Artists.Any(ar => string.Equals(ar, artist, StringComparison.OrdinalIgnoreCase)));
-    }
-
-    private Audio? FindByFuzzyName(string artist, string track)
-    {
-        var query = new InternalItemsQuery
-        {
-            IncludeItemTypes = [BaseItemKind.Audio],
-            Recursive = true
-        };
-
-        var items = _libraryManager.GetItemList(query);
-
-        return items
-            .OfType<Audio>()
-            .FirstOrDefault(a =>
-                IsLike(a.Name, track) &&
-                a.Artists.Any(ar => IsLike(ar, artist)));
-    }
-
-    /// <inheritdoc />
-    public bool IsLike(string source, string target)
-    {
-        var normalizedSource = NormalizeString(source);
-        var normalizedTarget = NormalizeString(target);
-
-        return string.Equals(normalizedSource, normalizedTarget, StringComparison.OrdinalIgnoreCase);
-    }
-
-    /// <summary>
-    /// Normalizes a string for comparison by removing special characters and whitespace.
-    /// </summary>
-    private static string NormalizeString(string input)
-    {
-        // Remove special characters, keep only alphanumeric
-        var cleaned = SpecialCharsRegex().Replace(input, string.Empty);
-        // Remove all whitespace
-        return WhitespaceRegex().Replace(cleaned, string.Empty);
-    }
-
-    [GeneratedRegex(@"[\~#%&*{}/:<>?,\.\-\(\)\|""\']")]
-    private static partial Regex SpecialCharsRegex();
-
-    [GeneratedRegex(@"\s+")]
-    private static partial Regex WhitespaceRegex();
-
-    [LoggerMessage(Level = LogLevel.Debug, Message = "Found match by MusicBrainz ID: {Artist} - {Track}")]
-    private partial void LogFoundMbidMatch(string artist, string track);
-
-    [LoggerMessage(Level = LogLevel.Debug, Message = "Found exact match: {Artist} - {Track}")]
-    private partial void LogFoundExactMatch(string artist, string track);
-
-    [LoggerMessage(Level = LogLevel.Debug, Message = "Found fuzzy match: {Artist} - {Track} => {MatchArtist} - {MatchTrack}")]
-    private partial void LogFoundFuzzyMatch(string artist, string track, string? matchArtist, string? matchTrack);
-
-    [LoggerMessage(Level = LogLevel.Debug, Message = "No match found for: {Artist} - {Track}")]
-    private partial void LogNoMatchFound(string artist, string track);
-
-    /// <inheritdoc />
-    public void Dispose()
-    {
-        if (!_disposed)
-        {
-            _mbidCache.Dispose();
-            _disposed = true;
         }
+
+        // Second pass: Name-based matching for remaining tracks
+        var unmatchedTracks = trackList.Where(t =>
+        {
+            var key = $"{t.Artist}:{t.Track}";
+            return !results.ContainsKey(key);
+        }).ToList();
+
+        if (unmatchedTracks.Any())
+        {
+            var allTracks = _libraryManager.GetItemList(new InternalItemsQuery(user)
+            {
+                IncludeItemTypes = new[] { BaseItemKind.Audio },
+                Recursive = true,
+                Limit = 5000 // Reasonable limit for batch operations
+            }).OfType<Audio>().ToList();
+
+            foreach (var track in unmatchedTracks)
+            {
+                var matched = allTracks.FirstOrDefault(item =>
+                {
+                    var itemArtist = item.Artists?.FirstOrDefault() ?? item.AlbumArtists?.FirstOrDefault();
+                    return string.Equals(itemArtist, track.Artist, StringComparison.OrdinalIgnoreCase) &&
+                           string.Equals(item.Name, track.Track, StringComparison.OrdinalIgnoreCase);
+                });
+
+                if (matched != null)
+                {
+                    var key = $"{track.Artist}:{track.Track}";
+                    results[key] = matched;
+                }
+            }
+        }
+
+        LogBatchMatchComplete(results.Count, trackList.Count);
+        return results;
     }
+
+    [LoggerMessage(Level = LogLevel.Warning, Message = "User {UserId} not found")]
+    private partial void LogUserNotFound(Guid userId);
+
+    [LoggerMessage(Level = LogLevel.Debug, Message = "Track not found in library: {Artist} - {Track}")]
+    private partial void LogTrackNotFound(string artist, string track);
+
+    [LoggerMessage(Level = LogLevel.Debug, Message = "Batch matching {Count} tracks")]
+    private partial void LogBatchMatchStart(int count);
+
+    [LoggerMessage(Level = LogLevel.Debug, Message = "Batch match: Found {Found} of {Total} tracks")]
+    private partial void LogBatchMatchComplete(int found, int total);
 }

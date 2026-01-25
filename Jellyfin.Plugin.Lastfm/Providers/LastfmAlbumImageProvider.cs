@@ -1,21 +1,25 @@
 // GPL-2.0 License
 // https://github.com/lusoris/jellyfin-plugin-lastfm
 
-namespace Jellyfin.Plugin.Lastfm.Providers;
-
 using System.Net.Http;
+using Lastfm.Scrobbler.Core.Models.Responses;
 using MediaBrowser.Controller.Entities;
 using MediaBrowser.Controller.Entities.Audio;
+using MediaBrowser.Controller.Providers;
 using MediaBrowser.Model.Entities;
 using MediaBrowser.Model.Providers;
 using Microsoft.Extensions.Logging;
-using Services;
+using Jellyfin.Plugin.Lastfm.Services;
+
+namespace Jellyfin.Plugin.Lastfm.Providers;
 
 /// <summary>
 /// Image provider for album images from Last.fm.
 /// </summary>
-public sealed partial class LastfmAlbumImageProvider : LastfmImageProviderBase<MusicAlbum>
+public sealed partial class LastfmAlbumImageProvider : IRemoteImageProvider, IHasOrder
 {
+    private readonly ILastfmApiClient _lastfmApiClient;
+    private readonly IHttpClientFactory _httpClientFactory;
     private readonly ILogger<LastfmAlbumImageProvider> _logger;
 
     /// <summary>
@@ -25,15 +29,33 @@ public sealed partial class LastfmAlbumImageProvider : LastfmImageProviderBase<M
         ILastfmApiClient lastfmApiClient,
         IHttpClientFactory httpClientFactory,
         ILogger<LastfmAlbumImageProvider> logger)
-        : base(lastfmApiClient, httpClientFactory, logger)
     {
+        _lastfmApiClient = lastfmApiClient;
+        _httpClientFactory = httpClientFactory;
         _logger = logger;
     }
 
     /// <inheritdoc />
-    public override async Task<IEnumerable<RemoteImageInfo>> GetImages(BaseItem item, CancellationToken cancellationToken)
+    public string Name => "Last.fm";
+
+    /// <inheritdoc />
+    /// After MusicBrainz and AudioDB, but before dynamic providers.
+    public int Order => 3;
+
+    /// <inheritdoc />
+    public bool Supports(BaseItem item) => item is MusicAlbum;
+
+    /// <inheritdoc />
+    public IEnumerable<ImageType> GetSupportedImages(BaseItem item)
     {
-        if (item is not MusicAlbum album)
+        yield return ImageType.Primary;
+    }
+
+    /// <inheritdoc />
+    public async Task<IEnumerable<RemoteImageInfo>> GetImages(BaseItem item, CancellationToken cancellationToken)
+    {
+        var album = item as MusicAlbum;
+        if (album == null)
         {
             return [];
         }
@@ -49,34 +71,62 @@ public sealed partial class LastfmAlbumImageProvider : LastfmImageProviderBase<M
             return [];
         }
 
-        LogFetchingAlbumImages(
-            albumName ?? "Unknown",
+        LogFetchingImages(
             artistName ?? "Unknown",
+            albumName,
             mbid ?? "N/A");
 
         try
         {
-            var response = await LastfmApiClient.GetAlbumInfoAsync(
+            var response = await _lastfmApiClient.GetAlbumInfoAsync(
                 artist: artistName,
                 album: albumName,
                 mbid: mbid,
                 cancellationToken: cancellationToken).ConfigureAwait(false);
 
-            return ExtractBestImage(response?.Album?.Images, albumName ?? "Unknown Album");
+            if (response?.Album?.Images == null || response.Album.Images.Count == 0)
+            {
+                LogNoImagesFound(albumName);
+                return [];
+            }
+
+            var images = new List<RemoteImageInfo>();
+
+            // Get the best quality image (extralarge > mega > large > medium > small)
+            var sizes = new[] { "extralarge", "mega", "large", "medium", "small" };
+            foreach (var size in sizes)
+            {
+                var image = response.Album.Images.FirstOrDefault(i =>
+                    string.Equals(i.Size, size, StringComparison.OrdinalIgnoreCase));
+
+                if (image != null && !string.IsNullOrEmpty(image.Url) && !image.Url.Contains("2a96cbd8b46e442fc41c2b86b821562f"))
+                {
+                    // Skip the default "no image" placeholder from Last.fm
+                    images.Add(new RemoteImageInfo
+                    {
+                        ProviderName = Name,
+                        Url = image.Url,
+                        Type = ImageType.Primary
+                    });
+
+                    LogFoundImage(size, albumName, image.Url);
+                    break;
+                }
+            }
+
+            return images;
         }
         catch (Exception ex)
         {
-            LogFetchingAlbumImagesError(ex, albumName ?? "Unknown");
+            LogFetchError(ex, albumName);
             return [];
         }
     }
 
-    [LoggerMessage(Level = LogLevel.Debug, Message = "No album name or MBID available for album lookup")]
-    private partial void LogNoAlbumInfo();
-
-    [LoggerMessage(Level = LogLevel.Debug, Message = "Fetching Last.fm images for album {AlbumName} by {ArtistName} (MBID: {Mbid})")]
-    private partial void LogFetchingAlbumImages(string albumName, string artistName, string mbid);
-
-    [LoggerMessage(Level = LogLevel.Error, Message = "Error fetching images for album {AlbumName}")]
-    private partial void LogFetchingAlbumImagesError(Exception ex, string albumName);
+    /// <inheritdoc />
+    public Task<HttpResponseMessage> GetImageResponse(string url, CancellationToken cancellationToken)
+    {
+        var httpClient = _httpClientFactory.CreateClient("LastFm");
+        return httpClient.GetAsync(new Uri(url), cancellationToken);
+    }
 }

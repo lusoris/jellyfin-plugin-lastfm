@@ -1,0 +1,46 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <RootNamespace>Emby.Plugin.Lastfm</RootNamespace>
+    <AssemblyName>Emby.Plugin.Lastfm</AssemblyName>
+    <Version>4.8.0.0</Version>
+    <AssemblyVersion>4.8.0.0</AssemblyVersion>
+    <FileVersion>4.8.0.0</FileVersion>
+    <LangVersion>latest</LangVersion>
+    <Nullable>enable</Nullable>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <AnalysisLevel>latest-recommended</AnalysisLevel>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <NoWarn>$(NoWarn);CA1860;NU1603;NU1605;MSB3277</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Emby Server SDK -->
+    <PackageReference Include="MediaBrowser.Server.Core" Version="4.8.0.80" PrivateAssets="All" />
+
+    <!-- JSON Serialization -->
+    <PackageReference Include="System.Text.Json" Version="8.0.5" />
+
+    <!-- HTTP Client -->
+    <PackageReference Include="System.Net.Http" Version="4.3.4" />
+
+    <!-- Dependency Injection -->
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="8.0.1" />
+    <PackageReference Include="Microsoft.Extensions.Logging" Version="8.0.1" />
+    <PackageReference Include="Microsoft.Extensions.Caching.Memory" Version="8.0.1" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Reference to shared Core library -->
+    <ProjectReference Include="..\Lastfm.Scrobbler.Core\Lastfm.Scrobbler.Core.csproj" />
+    <ProjectReference Include="..\Lastfm.Scrobbler.Abstractions\Lastfm.Scrobbler.Abstractions.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Embedded resources for web UI -->
+    <EmbeddedResource Include="Configuration\*.html" />
+    <EmbeddedResource Include="Configuration\*.js" />
+  </ItemGroup>
+
+</Project>

@@ -1,0 +1,58 @@
+---
+# Emby Plugin Manifest
+# Format: https://github.com/MediaBrowser/Emby.Plugins
+
+guid: 5e7fe7f0-b048-429e-a431-b1a7e69c931d
+name: Last.fm Scrobbler
+description: Scrobble music to Last.fm, sync loved tracks, and generate smart playlists
+overview: >
+  Automatically scrobble your music listening activity to Last.fm.
+
+  Features:
+  - Automatic scrobbling (30s minimum, 50% or 4min played)
+  - Now Playing updates
+  - Loved tracks synchronization (bidirectional)
+  - Play count import with multiple strategies
+  - Smart playlist generation (Similar Artists, Similar Tracks, Rediscover Favorites, Weekly Mixtape, Tag Discovery)
+  - Offline queue with JSON persistence
+
+  Requirements:
+  - Last.fm account
+  - Emby Server 4.8+
+  - .NET Framework 4.8
+
+category: Music
+owner: jesseward
+sourceUrl: https://github.com/jesseward/jellyfin-plugin-lastfm
+imageUrl: https://raw.githubusercontent.com/jesseward/jellyfin-plugin-lastfm/master/logo.png
+
+versions:
+  - version: 4.8.0.0
+    changelog: |
+      Initial Emby release
+      - Ported from Jellyfin plugin
+      - .NET Framework 4.8 support
+      - Full feature parity with Jellyfin version
+    targetAbi: 4.8.0.0
+    sourceUrl: https://github.com/jesseward/jellyfin-plugin-lastfm/releases/download/v4.8.0.0/emby-lastfm-plugin.zip
+    checksum: ""  # TODO: Generate after build
+    timestamp: 2026-01-25T00:00:00Z
+
+# Build information
+build:
+  target: net48
+  framework: .NET Framework 4.8
+
+# Dependencies (provided by Emby, should not be packaged)
+dependencies:
+  - MediaBrowser.Server.Core >= 4.8.0.0
+  - MediaBrowser.Common >= 4.8.0.0
+  - MediaBrowser.Controller >= 4.8.0.0
+  - MediaBrowser.Model >= 4.8.0.0
+
+# Included assemblies (will be packaged)
+assemblies:
+  - Emby.Plugin.Lastfm.dll
+  - Lastfm.Scrobbler.Core.dll
+  - Lastfm.Scrobbler.Abstractions.dll
+  - System.Text.Json.dll

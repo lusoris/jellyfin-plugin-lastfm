@@ -1,9 +1,17 @@
-﻿
+
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
 VisualStudioVersion = 15.0.27703.2026
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Jellyfin.Plugin.Lastfm", "Jellyfin.Plugin.Lastfm\Jellyfin.Plugin.Lastfm.csproj", "{D5017415-CDA0-4162-BF0A-34D7A3E1249B}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Lastfm.Scrobbler.Core", "Lastfm.Scrobbler.Core\Lastfm.Scrobbler.Core.csproj", "{F7840B85-3967-450E-886A-65A5A60B0E17}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Lastfm.Scrobbler.Core.Tests", "Lastfm.Scrobbler.Core.Tests\Lastfm.Scrobbler.Core.Tests.csproj", "{710C4694-30BE-401F-B708-026897160E12}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Lastfm.Scrobbler.Abstractions", "Lastfm.Scrobbler.Abstractions\Lastfm.Scrobbler.Abstractions.csproj", "{4A14905C-AFCC-414C-A0B1-80CBBE3F50F0}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Emby.Plugin.Lastfm", "Emby.Plugin.Lastfm\Emby.Plugin.Lastfm.csproj", "{8B7E5A3D-9C4F-4E1A-B8D2-7F3A1C8E9D4B}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -15,6 +23,22 @@ Global
 		{D5017415-CDA0-4162-BF0A-34D7A3E1249B}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{D5017415-CDA0-4162-BF0A-34D7A3E1249B}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{D5017415-CDA0-4162-BF0A-34D7A3E1249B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{F7840B85-3967-450E-886A-65A5A60B0E17}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F7840B85-3967-450E-886A-65A5A60B0E17}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F7840B85-3967-450E-886A-65A5A60B0E17}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F7840B85-3967-450E-886A-65A5A60B0E17}.Release|Any CPU.Build.0 = Release|Any CPU
+		{710C4694-30BE-401F-B708-026897160E12}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{710C4694-30BE-401F-B708-026897160E12}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{710C4694-30BE-401F-B708-026897160E12}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{710C4694-30BE-401F-B708-026897160E12}.Release|Any CPU.Build.0 = Release|Any CPU
+		{4A14905C-AFCC-414C-A0B1-80CBBE3F50F0}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{4A14905C-AFCC-414C-A0B1-80CBBE3F50F0}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{4A14905C-AFCC-414C-A0B1-80CBBE3F50F0}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{4A14905C-AFCC-414C-A0B1-80CBBE3F50F0}.Release|Any CPU.Build.0 = Release|Any CPU
+		{8B7E5A3D-9C4F-4E1A-B8D2-7F3A1C8E9D4B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8B7E5A3D-9C4F-4E1A-B8D2-7F3A1C8E9D4B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8B7E5A3D-9C4F-4E1A-B8D2-7F3A1C8E9D4B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8B7E5A3D-9C4F-4E1A-B8D2-7F3A1C8E9D4B}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

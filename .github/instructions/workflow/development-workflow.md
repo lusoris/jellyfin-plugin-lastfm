@@ -6,17 +6,43 @@
 
 ```bash
 # Restore dependencies
-dotnet restore Jellyfin.Plugin.Lastfm
+dotnet restore Jellyfin.Plugin.Lastfm.sln
 
 # Build (Debug)
-dotnet build Jellyfin.Plugin.Lastfm
+dotnet build Jellyfin.Plugin.Lastfm.sln
 
 # Build (Release)
-dotnet build Jellyfin.Plugin.Lastfm -c Release
+dotnet build Jellyfin.Plugin.Lastfm.sln -c Release
 
 # Clean build
-dotnet clean Jellyfin.Plugin.Lastfm && dotnet build Jellyfin.Plugin.Lastfm
+dotnet clean Jellyfin.Plugin.Lastfm.sln && dotnet build Jellyfin.Plugin.Lastfm.sln
 ```
+
+## Performance Optimizations
+
+The codebase includes several optimizations for production use:
+
+### 1. Caching Layer (`LibraryCacheService`)
+- **Location**: `Jellyfin.Plugin.Lastfm/Services/LibraryCacheService.cs`
+- **Purpose**: Reduces repeated database queries via `IMemoryCache`
+- **Cache TTLs**: 
+  - MBID lookups: 30 minutes
+  - Item lookups: 5 minutes
+  - Query results: 10 minutes
+- **Features**: Batch operations, cache warming, invalidation
+
+### 2. Code Deduplication (`AudioMapper`)
+- **Location**: `Jellyfin.Plugin.Lastfm/Adapters/AudioMapper.cs`
+- **Purpose**: Centralized Audio → MediaItemDto mapping
+- **Optimization**: String interning for common values (<100 chars)
+
+### 3. Batch Operations (`TrackMatcherService`)
+- **Location**: `Jellyfin.Plugin.Lastfm/Services/TrackMatcherService.cs`
+- **Purpose**: Match multiple tracks in single operation
+- **Strategy**: MBID batch lookup → name-based fallback
+- **Impact**: O(n) queries → O(1) + O(k) where k << n
+
+See [OPTIMIZATIONS.md](../OPTIMIZATIONS.md) for detailed metrics.
 
 ---
 
@@ -157,12 +183,14 @@ These are NOT provided by Jellyfin:
 ## Version Management
 
 ### Version Scheme
-**Format**: `{jellyfin_major}.{jellyfin_minor}.{jellyfin_patch}.{plugin_revision}`
+**Format**: `{target-system}-{jellyfin_major}.{jellyfin_minor}.{jellyfin_patch}.{plugin_revision}`
+
+**Target System**: `jellyfin`, `emby`, `plex`
 
 Examples:
-- `10.11.6.0` - Initial release for Jellyfin 10.11.6
-- `10.11.6.1` - Bugfix release for Jellyfin 10.11.6
-- `10.12.0.0` - Initial release for Jellyfin 10.12.0
+- `jellyfin-10.11.6.0` - Initial release for Jellyfin 10.11.6
+- `jellyfin-10.11.6.1` - Bugfix release for Jellyfin 10.11.6
+- `emby-4.8.0.0` - Initial release for Emby 4.8.0
 
 ### Assembly Version (Jellyfin.Plugin.Lastfm.csproj)
 ```xml
@@ -181,11 +209,12 @@ targetAbi: 10.11.6.0           # Jellyfin ABI target
 
 ### Release Tagging
 ```bash
-git tag -a 10.11.6.0 -m "Release 10.11.6.0"
-git push origin 10.11.6.0
+# Example for Jellyfin
+git tag -a jellyfin-10.11.6.0 -m "Release Jellyfin 10.11.6.0"
+git push origin jellyfin-10.11.6.0
 ```
 
-**Tag Format**: `{jellyfin_version}.{revision}` (e.g., `10.11.6.0`, `10.11.6.1`)
+**Tag Format**: `{target-system}-{jellyfin_version}.{revision}` (e.g., `jellyfin-10.11.6.0`, `emby-4.8.0.1`)
 
 ---
 

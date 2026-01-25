@@ -37,17 +37,54 @@ jobs:
       - name: Run AI Slop Detector
         run: bash .github/scripts/lint-ai-slop.sh
 
-  build:
-    name: Build Plugin
-    needs: [lint]
-    uses: jellyfin/jellyfin-meta-plugins/.github/workflows/build.yaml@master
-
-  test-manifest:
-    name: Test Manifest Generation
-    needs: [lint]
+  test:
+    name: Run Tests
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '9.0.x'
+
+      - name: Restore dependencies
+        run: dotnet restore Jellyfin.Plugin.Lastfm.sln
+
+      - name: Run tests
+        run: dotnet test Jellyfin.Plugin.Lastfm.sln --no-restore --verbosity normal
+
+  build:
+    name: Build Plugin
+    needs: [lint, test]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '9.0.x'
+
+      - name: Restore dependencies
+        run: dotnet restore Jellyfin.Plugin.Lastfm.sln
+
+      - name: Build solution
+        run: dotnet build Jellyfin.Plugin.Lastfm.sln -c Release --no-restore
+
+      - name: Create plugin zip
+        run: |
+          cd Jellyfin.Plugin.Lastfm/bin/Release/net9.0
+          zip -r ../../../../plugin.zip .
+          cd -
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: plugin
+          path: plugin.zip
+          retention-days: 7
+
 
 
       - name: Setup Python

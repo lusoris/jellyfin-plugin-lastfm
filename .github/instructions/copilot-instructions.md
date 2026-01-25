@@ -16,7 +16,7 @@
 |-------|---------|
 | **[ide-setup.instructions.md](ide-setup.instructions.md)** | → [ide/package-managers.md](ide/package-managers.md) (apt, brew, dnf, pacman, winget, choco...) |
 | | → [ide/shell-config.md](ide/shell-config.md) (bash, zsh, fish, PowerShell, nushell) |
-| | → [ide/ide-vscode.md](ide/ide-vscode.md), [ide-zed.md](ide/ide-zed.md), [ide-rider.md](ide/ide-rider.md), [ide-neovim.md](ide/ide-neovim.md) |
+| | → [ide/ide-vscode.md](ide/ide-vscode.md), [ide/ide-zed.md](ide/ide-zed.md), [ide/ide-rider.md](ide/ide-rider.md), [ide/ide-neovim.md](ide/ide-neovim.md) |
 | [workflow/development-workflow.md](workflow/development-workflow.md) | Build, versioning, CI/CD |
 | [workflow/testing.instructions.md](workflow/testing.instructions.md) | xUnit, Moq, coverage |
 
@@ -33,10 +33,12 @@
 ### 🏗️ Architecture
 | File | Description |
 |------|-------------|
-| [jellyfin-architecture.md](jellyfin-architecture.md) | Plugin lifecycle, DI |
+| [jellyfin-architecture.md](jellyfin-architecture.md) | Jellyfin plugin lifecycle, DI |
 | [jellyfin-models.md](jellyfin-models.md) | Audio, User, UserData types |
 | [jellyfin-configuration.md](jellyfin-configuration.md) | Plugin config system |
+| [emby/README.md](emby/README.md) | Emby instructions (⏸️ On Hold) |
 | [STATUS.md](STATUS.md) | Implementation status |
+| [OPTIMIZATIONS.md](OPTIMIZATIONS.md) | Performance improvements |
 
 ### ✅ Code Quality
 | File | Description |
@@ -44,6 +46,7 @@
 | [csharp/csharp-patterns.md](csharp/csharp-patterns.md) | Performance, async, LoggerMessage |
 | [csharp/csharp-security.md](csharp/csharp-security.md) | Security, strict mode, validation |
 | [snyk_rules.instructions.md](snyk_rules.instructions.md) | Security scanning |
+| [OPTIMIZATIONS.md](OPTIMIZATIONS.md) | Caching, deduplication, batch operations |
 
 ---
 

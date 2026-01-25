@@ -80,3 +80,11 @@ Jellyfin.Plugin.Lastfm/
 | Scrobble Rules | 30s minimum, 50% or 4min threshold |
 | Timestamp | Track start time (now - played duration) |
 | Batch Limit | 50 scrobbles per request |
+
+---
+
+**Related:**
+- [jellyfin-architecture.md](jellyfin-architecture.md) - Plugin architecture
+- [workflow/development-workflow.md](workflow/development-workflow.md) - Development workflow
+- [OPTIMIZATIONS.md](OPTIMIZATIONS.md) - Performance improvements
+- [lastfm-api.instructions.md](lastfm-api.instructions.md) - Last.fm API reference

@@ -1,10 +1,10 @@
 // GPL-2.0 License
 // https://github.com/lusoris/jellyfin-plugin-lastfm
 
-namespace Jellyfin.Plugin.Lastfm.Services;
+using Lastfm.Scrobbler.Core.Models;
+using Lastfm.Scrobbler.Core.Models.Responses;
 
-using Models;
-using Models.Responses;
+namespace Jellyfin.Plugin.Lastfm.Services;
 
 /// <summary>
 /// Client for the Last.fm API.
@@ -23,7 +23,7 @@ public interface ILastfmApiClient
     /// <summary>
     /// Scrobbles a track.
     /// </summary>
-    Task<ScrobbleResponse?> ScrobbleAsync(ScrobbleInfo scrobble, string sessionKey, CancellationToken cancellationToken = default);
+    Task<ScrobbleResponse?> ScrobbleAsync(Scrobble scrobble, string sessionKey, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Scrobbles multiple tracks in a batch (up to 50).
@@ -32,12 +32,12 @@ public interface ILastfmApiClient
     /// <param name="sessionKey">User session key.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>Scrobble response with accepted/ignored counts.</returns>
-    Task<ScrobbleResponse?> ScrobbleBatchAsync(IReadOnlyList<ScrobbleInfo> scrobbles, string sessionKey, CancellationToken cancellationToken = default);
+    Task<ScrobbleResponse?> ScrobbleBatchAsync(IReadOnlyList<Scrobble> scrobbles, string sessionKey, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Updates the now playing track.
     /// </summary>
-    Task<bool> UpdateNowPlayingAsync(ScrobbleInfo scrobble, string sessionKey, CancellationToken cancellationToken = default);
+    Task<bool> UpdateNowPlayingAsync(Scrobble scrobble, string sessionKey, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Loves a track.
