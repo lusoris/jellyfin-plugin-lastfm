@@ -14,17 +14,36 @@ namespace Jellyfin.Plugin.Lastfm.Api
     using Resources;
     using Utils;
 
-    public class LastfmApiClient : BaseLastfmApiClient
+    public class LastfmApiClient : BaseLastfmApiClient, IDisposable
     {
         private readonly ILogger _logger;
 
         private static readonly TimeSpan DuplicateScrobbleTTL = TimeSpan.FromSeconds(15);
         private readonly MemoryCache _scrobbleCache = new(new MemoryCacheOptions());
         private readonly object _scrobbleLock = new();
+        private bool _disposed;
 
         public LastfmApiClient(IHttpClientFactory httpClientFactory, ILogger logger) : base(httpClientFactory, logger)
         {
             _logger = logger;
+        }
+
+        public void Dispose()
+        {
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+
+        protected virtual void Dispose(bool disposing)
+        {
+            if (!_disposed)
+            {
+                if (disposing)
+                {
+                    _scrobbleCache?.Dispose();
+                }
+                _disposed = true;
+            }
         }
 
 

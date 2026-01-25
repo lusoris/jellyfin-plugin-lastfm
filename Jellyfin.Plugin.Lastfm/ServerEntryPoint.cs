@@ -57,9 +57,11 @@ namespace Jellyfin.Plugin.Lastfm
         /// </summary>
         async void UserDataSaved(object sender, UserDataSaveEventArgs e)
         {
-            // We only care about audio
-            if (e.Item is not Audio)
-                return;
+            try
+            {
+                // We only care about audio
+                if (e.Item is not Audio)
+                    return;
 
             var lastfmUser = Utils.UserHelpers.GetUser(e.UserId);
             if (lastfmUser == null)
@@ -107,7 +109,12 @@ namespace Jellyfin.Plugin.Lastfm
                     _logger.LogInformation("track {0} is missing  artist ({1}) or track name ({2}) metadata. Not submitting", item.Path, item.Artists.FirstOrDefault(), item.Name);
                     return;
                 }
-                await _apiClient.Scrobble(item, lastfmUser).ConfigureAwait(false);
+                    await _apiClient.Scrobble(item, lastfmUser).ConfigureAwait(false);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error in UserDataSaved event handler");
             }
         }
 
@@ -118,9 +125,11 @@ namespace Jellyfin.Plugin.Lastfm
         /// </summary>
         private async void PlaybackStopped(object sender, PlaybackStopEventArgs e)
         {
-            // We only care about audio
-            if (e.Item is not Audio)
-                return;
+            try
+            {
+                // We only care about audio
+                if (e.Item is not Audio)
+                    return;
 
             var item = e.Item as Audio;
 
@@ -180,12 +189,17 @@ namespace Jellyfin.Plugin.Lastfm
                 return;
             }
 
-            if (string.IsNullOrWhiteSpace(item.Artists.FirstOrDefault()) || string.IsNullOrWhiteSpace(item.Name))
-            {
-                _logger.LogInformation("track {0} is missing  artist ({1}) or track name ({2}) metadata. Not submitting", item.Path, item.Artists.FirstOrDefault(), item.Name);
-                return;
+                if (string.IsNullOrWhiteSpace(item.Artists.FirstOrDefault()) || string.IsNullOrWhiteSpace(item.Name))
+                {
+                    _logger.LogInformation("track {0} is missing  artist ({1}) or track name ({2}) metadata. Not submitting", item.Path, item.Artists.FirstOrDefault(), item.Name);
+                    return;
+                }
+                await _apiClient.Scrobble(item, lastfmUser).ConfigureAwait(false);
             }
-            await _apiClient.Scrobble(item, lastfmUser).ConfigureAwait(false);
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error in PlaybackStopped event handler");
+            }
         }
 
         /// <summary>
@@ -193,11 +207,13 @@ namespace Jellyfin.Plugin.Lastfm
         /// </summary>
         private async void PlaybackStart(object sender, PlaybackProgressEventArgs e)
         {
-            // We only care about audio
-            if (e.Item is not Audio)
-                return;
+            try
+            {
+                // We only care about audio
+                if (e.Item is not Audio)
+                    return;
 
-            var user = e.Users.FirstOrDefault();
+                var user = e.Users.FirstOrDefault();
             if (user == null)
             {
                 return;
@@ -223,13 +239,18 @@ namespace Jellyfin.Plugin.Lastfm
                 return;
             }
 
-            var item = e.Item as Audio;
-            if (string.IsNullOrWhiteSpace(item.Artists.FirstOrDefault()) || string.IsNullOrWhiteSpace(item.Name))
-            {
-                _logger.LogInformation("track {0} is missing artist ({1}) or track name ({2}) metadata. Not submitting", item.Path, item.Artists.FirstOrDefault(), item.Name);
-                return;
+                var item = e.Item as Audio;
+                if (string.IsNullOrWhiteSpace(item.Artists.FirstOrDefault()) || string.IsNullOrWhiteSpace(item.Name))
+                {
+                    _logger.LogInformation("track {0} is missing artist ({1}) or track name ({2}) metadata. Not submitting", item.Path, item.Artists.FirstOrDefault(), item.Name);
+                    return;
+                }
+                await _apiClient.NowPlaying(item, lastfmUser).ConfigureAwait(false);
             }
-            await _apiClient.NowPlaying(item, lastfmUser).ConfigureAwait(false);
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error in PlaybackStart event handler");
+            }
         }
 
         /// <summary>
@@ -255,12 +276,14 @@ namespace Jellyfin.Plugin.Lastfm
             _userDataManager.UserDataSaved -= UserDataSaved;
 
             // Clean up
+            _apiClient?.Dispose();
             _apiClient = null;
             return Task.CompletedTask;
         }
 
         public void Dispose()
         {
+            _apiClient?.Dispose();
             GC.SuppressFinalize(this);
         }
     }

@@ -14,7 +14,7 @@ namespace Jellyfin.Plugin.Lastfm.Utils
         public static string CreateMd5Hash(string input)
         {
             // Use input string to calculate MD5 hash
-            var md5 = MD5.Create();
+            using var md5 = MD5.Create();
 
             var inputBytes = Encoding.UTF8.GetBytes(input);
             var hashBytes = md5.ComputeHash(inputBytes);
