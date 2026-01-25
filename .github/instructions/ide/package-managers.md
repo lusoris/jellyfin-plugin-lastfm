@@ -121,4 +121,4 @@ winget install Microsoft.DotNet.SDK.9 Git.Git
 
 ---
 
-**Related:** [shell-config.md](shell-config.md) | [ide-vscode.md](ide-vscode.md)
+**Related:** [ide/shell-config.md](ide/shell-config.md) | [ide/ide-vscode.md](ide/ide-vscode.md)

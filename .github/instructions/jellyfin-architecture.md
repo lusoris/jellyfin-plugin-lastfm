@@ -336,7 +336,7 @@ public class RestApi : ControllerBase
 
 **Related**: 
 - [copilot-instructions.md](copilot-instructions.md) - Overview & index
-- [lastfm-api-instructions.md](lastfm-api-instructions.md) - API details
+- [lastfm-api.instructions.md](lastfm-api.instructions.md) - API details
 ---
 
 ## Available Interfaces for Plugin Features

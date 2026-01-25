@@ -113,4 +113,4 @@ var keys = item.GetUserDataKeys();
 
 ---
 
-**Related:** [jellyfin-audio.md](jellyfin-audio.md) | [jellyfin-interfaces.md](jellyfin-interfaces.md)
+**Related:** [api/jellyfin-audio.md](api/jellyfin-audio.md) | [api/jellyfin-interfaces.md](api/jellyfin-interfaces.md)

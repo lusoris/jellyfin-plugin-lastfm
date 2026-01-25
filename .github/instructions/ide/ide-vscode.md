@@ -154,4 +154,4 @@ For working with multiple branches:
 
 ---
 
-**Related:** [shell-config.md](shell-config.md) | [ide-zed.md](ide-zed.md) | [ide-rider.md](ide-rider.md)
+**Related:** [ide/shell-config.md](ide/shell-config.md) | [ide/ide-zed.md](ide/ide-zed.md) | [ide/ide-rider.md](ide/ide-rider.md)

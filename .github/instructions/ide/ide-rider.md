@@ -68,4 +68,4 @@ Create `Run/Debug Configuration`:
 
 ---
 
-**Related:** [ide-vscode.md](ide-vscode.md) | [ide-neovim.md](ide-neovim.md)
+**Related:** [ide/ide-vscode.md](ide/ide-vscode.md) | [ide/ide-neovim.md](ide/ide-neovim.md)

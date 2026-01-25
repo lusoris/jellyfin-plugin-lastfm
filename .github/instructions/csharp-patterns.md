@@ -374,4 +374,4 @@ public Task StopAsync(CancellationToken ct)
 **Related**:
 - [csharp-security.md](csharp-security.md) - Security patterns
 - [development-workflow.md](development-workflow.md) - Build & testing
-- [ide-setup.md](ide-setup.md) - Development environment
+- [ide-setup.instructions.md](ide-setup.instructions.md) - Development environment

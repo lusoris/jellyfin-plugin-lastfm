@@ -61,7 +61,7 @@ dotnet build Jellyfin.Plugin.Lastfm -c Release
 ```
 
 ### IDE Setup
-See [ide-setup.md](ide-setup.md) for VS Code, Zed, or Rider configuration.
+See [ide-setup.instructions.md](ide-setup.instructions.md) for VS Code, Zed, or Rider configuration.
 
 ---
 

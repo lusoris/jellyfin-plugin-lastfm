@@ -151,4 +151,4 @@ function dr { dotnet restore $args }
 
 ---
 
-**Related:** [package-managers.md](package-managers.md) | [../development-workflow.md](../development-workflow.md)
+**Related:** [ide/package-managers.md](ide/package-managers.md) | [development-workflow.md](development-workflow.md)

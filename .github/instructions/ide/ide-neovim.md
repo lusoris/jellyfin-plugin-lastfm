@@ -105,4 +105,4 @@ require('lspconfig').omnisharp.setup({})
 
 ---
 
-**Related:** [ide-vscode.md](ide-vscode.md) | [shell-config.md](shell-config.md)
+**Related:** [ide/ide-vscode.md](ide/ide-vscode.md) | [ide/shell-config.md](ide/shell-config.md)

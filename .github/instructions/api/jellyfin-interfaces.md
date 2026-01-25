@@ -107,4 +107,4 @@ public interface IUserManager
 
 ---
 
-**Related:** [jellyfin-playback.md](jellyfin-playback.md) | [jellyfin-userdata.md](jellyfin-userdata.md)
+**Related:** [api/jellyfin-playback.md](api/jellyfin-playback.md) | [api/jellyfin-userdata.md](api/jellyfin-userdata.md)

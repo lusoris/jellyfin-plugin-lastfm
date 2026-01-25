@@ -1,6 +1,6 @@
 # Development Workflow & Building
 
-> **Prerequisites**: See [ide-setup.md](ide-setup.md) for IDE configuration.
+> **Prerequisites**: See [ide-setup.instructions.md](ide-setup.instructions.md) for IDE configuration.
 
 ## Building the Project
 

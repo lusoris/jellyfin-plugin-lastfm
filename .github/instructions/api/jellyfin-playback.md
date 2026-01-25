@@ -95,4 +95,4 @@ public class PlaybackHandler : IServerEntryPoint
 
 ---
 
-**Related:** [jellyfin-interfaces.md](jellyfin-interfaces.md) | [jellyfin-audio.md](jellyfin-audio.md)
+**Related:** [api/jellyfin-interfaces.md](api/jellyfin-interfaces.md) | [api/jellyfin-audio.md](api/jellyfin-audio.md)

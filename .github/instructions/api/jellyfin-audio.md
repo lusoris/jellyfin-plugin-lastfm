@@ -133,4 +133,4 @@ var query = new InternalItemsQuery(user)
 
 ---
 
-**Related:** [jellyfin-userdata.md](jellyfin-userdata.md) | [jellyfin-interfaces.md](jellyfin-interfaces.md)
+**Related:** [api/jellyfin-userdata.md](api/jellyfin-userdata.md) | [api/jellyfin-interfaces.md](api/jellyfin-interfaces.md)
