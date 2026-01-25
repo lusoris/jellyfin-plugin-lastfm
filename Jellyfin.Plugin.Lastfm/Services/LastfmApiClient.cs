@@ -3,7 +3,8 @@
 
 namespace Jellyfin.Plugin.Lastfm.Services;
 
-using System.Net.Http.Json;
+using System.Globalization;
+using System.Net;
 using System.Text;
 using System.Text.Json;
 using Microsoft.Extensions.Logging;
@@ -19,12 +20,15 @@ public class LastfmApiClient : ILastfmApiClient
 
     private static readonly JsonSerializerOptions JsonOptions = new()
     {
-        PropertyNameCaseInsensitive = true
+        PropertyNameCaseInsensitive = true,
+        PropertyNamingPolicy = JsonNamingPolicy.CamelCase
     };
 
     private readonly IHttpClientFactory _httpClientFactory;
     private readonly ISignatureGenerator _signatureGenerator;
     private readonly ILogger<LastfmApiClient> _logger;
+    private readonly SemaphoreSlim _rateLimiter = new(1, 1);
+    private DateTime _lastRequestTime = DateTime.MinValue;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="LastfmApiClient"/> class.
@@ -40,56 +44,381 @@ public class LastfmApiClient : ILastfmApiClient
     }
 
     /// <inheritdoc />
-    public Task<MobileSessionResponse?> GetMobileSessionAsync(string username, string password, CancellationToken cancellationToken = default)
+    public async Task<MobileSessionResponse?> GetMobileSessionAsync(
+        string username,
+        string password,
+        CancellationToken cancellationToken = default)
     {
-        // TODO: Implement auth.getMobileSession
-        throw new NotImplementedException();
+        _logger.LogDebug("Authenticating user {Username}", username);
+
+        var parameters = new Dictionary<string, string>
+        {
+            ["method"] = "auth.getMobileSession",
+            ["username"] = username,
+            ["password"] = password,
+            ["api_key"] = GetApiKey()
+        };
+
+        var response = await PostSignedAsync<MobileSessionResponse>(parameters, cancellationToken).ConfigureAwait(false);
+
+        if (response?.Session != null)
+        {
+            _logger.LogInformation("Successfully authenticated user {Username}", username);
+        }
+        else
+        {
+            _logger.LogWarning("Authentication failed for user {Username}: {Error}", username, response?.Error?.Message);
+        }
+
+        return response;
     }
 
     /// <inheritdoc />
-    public Task<ScrobbleResponse?> ScrobbleAsync(ScrobbleInfo scrobble, string sessionKey, CancellationToken cancellationToken = default)
+    public async Task<ScrobbleResponse?> ScrobbleAsync(
+        ScrobbleInfo scrobble,
+        string sessionKey,
+        CancellationToken cancellationToken = default)
     {
-        // TODO: Implement track.scrobble
-        throw new NotImplementedException();
+        _logger.LogDebug("Scrobbling {Artist} - {Track}", scrobble.Artist, scrobble.Track);
+
+        var parameters = new Dictionary<string, string>
+        {
+            ["method"] = "track.scrobble",
+            ["artist"] = scrobble.Artist,
+            ["track"] = scrobble.Track,
+            ["timestamp"] = scrobble.Timestamp.ToString(CultureInfo.InvariantCulture),
+            ["api_key"] = GetApiKey(),
+            ["sk"] = sessionKey
+        };
+
+        // Add optional parameters
+        if (!string.IsNullOrEmpty(scrobble.Album))
+        {
+            parameters["album"] = scrobble.Album;
+        }
+
+        if (!string.IsNullOrEmpty(scrobble.AlbumArtist))
+        {
+            parameters["albumArtist"] = scrobble.AlbumArtist;
+        }
+
+        if (!string.IsNullOrEmpty(scrobble.MusicBrainzId))
+        {
+            parameters["mbid"] = scrobble.MusicBrainzId;
+        }
+
+        if (scrobble.Duration.HasValue)
+        {
+            parameters["duration"] = scrobble.Duration.Value.ToString(CultureInfo.InvariantCulture);
+        }
+
+        var response = await PostSignedAsync<ScrobbleResponse>(parameters, cancellationToken).ConfigureAwait(false);
+
+        if (response?.Scrobbles?.Attributes?.Accepted > 0)
+        {
+            _logger.LogInformation("Successfully scrobbled {Artist} - {Track}", scrobble.Artist, scrobble.Track);
+        }
+        else
+        {
+            _logger.LogWarning(
+                "Scrobble rejected for {Artist} - {Track}: {Error}",
+                scrobble.Artist,
+                scrobble.Track,
+                response?.Error?.Message ?? "Unknown error");
+        }
+
+        return response;
     }
 
     /// <inheritdoc />
-    public Task<bool> UpdateNowPlayingAsync(ScrobbleInfo scrobble, string sessionKey, CancellationToken cancellationToken = default)
+    public async Task<bool> UpdateNowPlayingAsync(
+        ScrobbleInfo scrobble,
+        string sessionKey,
+        CancellationToken cancellationToken = default)
     {
-        // TODO: Implement track.updateNowPlaying
-        throw new NotImplementedException();
+        _logger.LogDebug("Updating now playing: {Artist} - {Track}", scrobble.Artist, scrobble.Track);
+
+        var parameters = new Dictionary<string, string>
+        {
+            ["method"] = "track.updateNowPlaying",
+            ["artist"] = scrobble.Artist,
+            ["track"] = scrobble.Track,
+            ["api_key"] = GetApiKey(),
+            ["sk"] = sessionKey
+        };
+
+        // Add optional parameters
+        if (!string.IsNullOrEmpty(scrobble.Album))
+        {
+            parameters["album"] = scrobble.Album;
+        }
+
+        if (!string.IsNullOrEmpty(scrobble.AlbumArtist))
+        {
+            parameters["albumArtist"] = scrobble.AlbumArtist;
+        }
+
+        if (!string.IsNullOrEmpty(scrobble.MusicBrainzId))
+        {
+            parameters["mbid"] = scrobble.MusicBrainzId;
+        }
+
+        if (scrobble.Duration.HasValue)
+        {
+            parameters["duration"] = scrobble.Duration.Value.ToString(CultureInfo.InvariantCulture);
+        }
+
+        var response = await PostSignedAsync<BaseResponse>(parameters, cancellationToken).ConfigureAwait(false);
+        var success = response?.IsSuccess ?? false;
+
+        if (success)
+        {
+            _logger.LogDebug("Now playing updated: {Artist} - {Track}", scrobble.Artist, scrobble.Track);
+        }
+        else
+        {
+            _logger.LogWarning(
+                "Failed to update now playing for {Artist} - {Track}: {Error}",
+                scrobble.Artist,
+                scrobble.Track,
+                response?.Error?.Message ?? "Unknown error");
+        }
+
+        return success;
     }
 
     /// <inheritdoc />
-    public Task<bool> LoveTrackAsync(string artist, string track, string sessionKey, CancellationToken cancellationToken = default)
+    public async Task<bool> LoveTrackAsync(
+        string artist,
+        string track,
+        string sessionKey,
+        CancellationToken cancellationToken = default)
     {
-        // TODO: Implement track.love
-        throw new NotImplementedException();
+        _logger.LogDebug("Loving track: {Artist} - {Track}", artist, track);
+
+        var parameters = new Dictionary<string, string>
+        {
+            ["method"] = "track.love",
+            ["artist"] = artist,
+            ["track"] = track,
+            ["api_key"] = GetApiKey(),
+            ["sk"] = sessionKey
+        };
+
+        var response = await PostSignedAsync<BaseResponse>(parameters, cancellationToken).ConfigureAwait(false);
+        var success = response?.IsSuccess ?? false;
+
+        if (success)
+        {
+            _logger.LogInformation("Loved track: {Artist} - {Track}", artist, track);
+        }
+        else
+        {
+            _logger.LogWarning(
+                "Failed to love track {Artist} - {Track}: {Error}",
+                artist,
+                track,
+                response?.Error?.Message ?? "Unknown error");
+        }
+
+        return success;
     }
 
     /// <inheritdoc />
-    public Task<bool> UnloveTrackAsync(string artist, string track, string sessionKey, CancellationToken cancellationToken = default)
+    public async Task<bool> UnloveTrackAsync(
+        string artist,
+        string track,
+        string sessionKey,
+        CancellationToken cancellationToken = default)
     {
-        // TODO: Implement track.unlove
-        throw new NotImplementedException();
+        _logger.LogDebug("Unloving track: {Artist} - {Track}", artist, track);
+
+        var parameters = new Dictionary<string, string>
+        {
+            ["method"] = "track.unlove",
+            ["artist"] = artist,
+            ["track"] = track,
+            ["api_key"] = GetApiKey(),
+            ["sk"] = sessionKey
+        };
+
+        var response = await PostSignedAsync<BaseResponse>(parameters, cancellationToken).ConfigureAwait(false);
+        var success = response?.IsSuccess ?? false;
+
+        if (success)
+        {
+            _logger.LogInformation("Unloved track: {Artist} - {Track}", artist, track);
+        }
+        else
+        {
+            _logger.LogWarning(
+                "Failed to unlove track {Artist} - {Track}: {Error}",
+                artist,
+                track,
+                response?.Error?.Message ?? "Unknown error");
+        }
+
+        return success;
     }
 
     /// <inheritdoc />
-    public Task<LovedTracksResponse?> GetLovedTracksAsync(string username, int page = 1, int limit = 1000, CancellationToken cancellationToken = default)
+    public async Task<LovedTracksResponse?> GetLovedTracksAsync(
+        string username,
+        int page = 1,
+        int limit = 1000,
+        CancellationToken cancellationToken = default)
     {
-        // TODO: Implement user.getLovedTracks
-        throw new NotImplementedException();
+        _logger.LogDebug("Fetching loved tracks for {Username}, page {Page}", username, page);
+
+        var url = $"{ApiBaseUrl}?method=user.getLovedTracks" +
+                  $"&user={Uri.EscapeDataString(username)}" +
+                  $"&api_key={GetApiKey()}" +
+                  $"&page={page}" +
+                  $"&limit={limit}" +
+                  $"&format=json";
+
+        var response = await GetAsync<LovedTracksResponse>(url, cancellationToken).ConfigureAwait(false);
+
+        if (response?.HasTracks == true)
+        {
+            _logger.LogDebug(
+                "Fetched {Count} loved tracks for {Username}",
+                response.LovedTracks?.Tracks?.Count ?? 0,
+                username);
+        }
+
+        return response;
     }
 
-    private string GetApiKey()
+    /// <summary>
+    /// Sends a signed POST request to the Last.fm API.
+    /// </summary>
+    private async Task<T?> PostSignedAsync<T>(
+        Dictionary<string, string> parameters,
+        CancellationToken cancellationToken) where T : BaseResponse
     {
-        // TODO: Get from configuration
+        // Add signature
+        var signature = _signatureGenerator.CreateSignature(parameters, GetApiSecret());
+        parameters["api_sig"] = signature;
+        parameters["format"] = "json";
+
+        // Build form content
+        var content = new FormUrlEncodedContent(parameters);
+
+        return await SendRequestAsync<T>(
+            () => new HttpRequestMessage(HttpMethod.Post, ApiBaseUrl) { Content = content },
+            cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// Sends a GET request to the Last.fm API.
+    /// </summary>
+    private async Task<T?> GetAsync<T>(string url, CancellationToken cancellationToken) where T : BaseResponse
+    {
+        return await SendRequestAsync<T>(
+            () => new HttpRequestMessage(HttpMethod.Get, url),
+            cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// Sends a request with rate limiting and retry logic.
+    /// </summary>
+    private async Task<T?> SendRequestAsync<T>(
+        Func<HttpRequestMessage> requestFactory,
+        CancellationToken cancellationToken) where T : BaseResponse
+    {
+        await ApplyRateLimitAsync(cancellationToken).ConfigureAwait(false);
+
+        const int maxRetries = 3;
+        var delay = TimeSpan.FromSeconds(1);
+
+        for (var attempt = 1; attempt <= maxRetries; attempt++)
+        {
+            try
+            {
+                using var request = requestFactory();
+                using var httpClient = _httpClientFactory.CreateClient("LastFm");
+                using var response = await httpClient.SendAsync(request, cancellationToken).ConfigureAwait(false);
+
+                var json = await response.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
+
+                if (string.IsNullOrEmpty(json))
+                {
+                    _logger.LogWarning("Empty response from Last.fm API");
+                    return null;
+                }
+
+                var result = JsonSerializer.Deserialize<T>(json, JsonOptions);
+
+                // Check for rate limit error
+                if (result?.Error?.Code == 29)
+                {
+                    _logger.LogWarning("Rate limit exceeded, waiting before retry");
+                    await Task.Delay(delay * 2, cancellationToken).ConfigureAwait(false);
+                    delay *= 2;
+                    continue;
+                }
+
+                // Check for temporary failures
+                if (result?.Error?.Code is 11 or 16)
+                {
+                    _logger.LogWarning("Temporary Last.fm service error (code {Code}), retrying", result.Error.Code);
+                    await Task.Delay(delay, cancellationToken).ConfigureAwait(false);
+                    delay *= 2;
+                    continue;
+                }
+
+                return result;
+            }
+            catch (HttpRequestException ex) when (attempt < maxRetries)
+            {
+                _logger.LogWarning(ex, "HTTP request failed (attempt {Attempt}/{MaxRetries})", attempt, maxRetries);
+                await Task.Delay(delay, cancellationToken).ConfigureAwait(false);
+                delay *= 2;
+            }
+            catch (JsonException ex)
+            {
+                _logger.LogError(ex, "Failed to parse Last.fm API response");
+                return null;
+            }
+        }
+
+        _logger.LogError("Last.fm API request failed after {MaxRetries} retries", maxRetries);
+        return null;
+    }
+
+    /// <summary>
+    /// Applies rate limiting (max 1 request per second).
+    /// </summary>
+    private async Task ApplyRateLimitAsync(CancellationToken cancellationToken)
+    {
+        await _rateLimiter.WaitAsync(cancellationToken).ConfigureAwait(false);
+        try
+        {
+            var timeSinceLastRequest = DateTime.UtcNow - _lastRequestTime;
+            var minimumDelay = TimeSpan.FromSeconds(1);
+
+            if (timeSinceLastRequest < minimumDelay)
+            {
+                var waitTime = minimumDelay - timeSinceLastRequest;
+                await Task.Delay(waitTime, cancellationToken).ConfigureAwait(false);
+            }
+
+            _lastRequestTime = DateTime.UtcNow;
+        }
+        finally
+        {
+            _rateLimiter.Release();
+        }
+    }
+
+    private static string GetApiKey()
+    {
         return Plugin.Instance?.Configuration.ApiKey ?? string.Empty;
     }
 
-    private string GetApiSecret()
+    private static string GetApiSecret()
     {
-        // TODO: Get from configuration
         return Plugin.Instance?.Configuration.ApiSecret ?? string.Empty;
     }
 }
