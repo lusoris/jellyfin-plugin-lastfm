@@ -26,6 +26,15 @@ public interface ILastfmApiClient
     Task<ScrobbleResponse?> ScrobbleAsync(ScrobbleInfo scrobble, string sessionKey, CancellationToken cancellationToken = default);
 
     /// <summary>
+    /// Scrobbles multiple tracks in a batch (up to 50).
+    /// </summary>
+    /// <param name="scrobbles">Tracks to scrobble (max 50).</param>
+    /// <param name="sessionKey">User session key.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>Scrobble response with accepted/ignored counts.</returns>
+    Task<ScrobbleResponse?> ScrobbleBatchAsync(IReadOnlyList<ScrobbleInfo> scrobbles, string sessionKey, CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// Updates the now playing track.
     /// </summary>
     Task<bool> UpdateNowPlayingAsync(ScrobbleInfo scrobble, string sessionKey, CancellationToken cancellationToken = default);

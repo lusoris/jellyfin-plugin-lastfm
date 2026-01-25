@@ -10,6 +10,7 @@ using MediaBrowser.Controller.Session;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Models;
+using Queue;
 using Services;
 
 /// <summary>
@@ -20,6 +21,7 @@ public class PlaybackEventHandler : IHostedService, IDisposable
     private readonly ISessionManager _sessionManager;
     private readonly ILastfmApiClient _apiClient;
     private readonly IScrobbleService _scrobbleService;
+    private readonly IScrobbleQueue _scrobbleQueue;
     private readonly ILogger<PlaybackEventHandler> _logger;
     private bool _disposed;
 
@@ -30,11 +32,13 @@ public class PlaybackEventHandler : IHostedService, IDisposable
         ISessionManager sessionManager,
         ILastfmApiClient apiClient,
         IScrobbleService scrobbleService,
+        IScrobbleQueue scrobbleQueue,
         ILogger<PlaybackEventHandler> logger)
     {
         _sessionManager = sessionManager;
         _apiClient = apiClient;
         _scrobbleService = scrobbleService;
+        _scrobbleQueue = scrobbleQueue;
         _logger = logger;
     }
 
@@ -193,12 +197,47 @@ public class PlaybackEventHandler : IHostedService, IDisposable
             scrobbleInfo.Artist,
             scrobbleInfo.Track);
 
-        var response = await _apiClient.ScrobbleAsync(scrobbleInfo, userConfig.SessionKey).ConfigureAwait(false);
-
-        if (response?.Scrobbles?.Attributes?.Accepted > 0)
+        try
         {
-            _scrobbleService.RecordScrobble(userId, audio.Id);
+            var response = await _apiClient.ScrobbleAsync(scrobbleInfo, userConfig.SessionKey).ConfigureAwait(false);
+
+            if (response?.Scrobbles?.Attributes?.Accepted > 0)
+            {
+                _scrobbleService.RecordScrobble(userId, audio.Id);
+            }
+            else if (response?.IsError == true && IsRetryableError(response.ErrorCode))
+            {
+                // Queue for retry on network/rate limit errors
+                _logger.LogWarning(
+                    "Scrobble failed, queueing for retry: {Artist} - {Track} (Error: {Error})",
+                    scrobbleInfo.Artist,
+                    scrobbleInfo.Track,
+                    response.Error?.Message ?? "Unknown");
+                await _scrobbleQueue.EnqueueAsync(userId, scrobbleInfo).ConfigureAwait(false);
+            }
         }
+        catch (HttpRequestException ex)
+        {
+            // Network error - queue for retry
+            _logger.LogWarning(
+                ex,
+                "Network error scrobbling, queueing for retry: {Artist} - {Track}",
+                scrobbleInfo.Artist,
+                scrobbleInfo.Track);
+            await _scrobbleQueue.EnqueueAsync(userId, scrobbleInfo).ConfigureAwait(false);
+        }
+    }
+
+    /// <summary>
+    /// Checks if an error code is retryable (network/rate limit issues).
+    /// </summary>
+    private static bool IsRetryableError(int? errorCode)
+    {
+        // Error codes that should be retried:
+        // 11 - Service temporarily unavailable
+        // 16 - Temporary error
+        // 29 - Rate limit exceeded
+        return errorCode is 11 or 16 or 29;
     }
 
     private static ScrobbleInfo? CreateScrobbleInfo(Audio audio)

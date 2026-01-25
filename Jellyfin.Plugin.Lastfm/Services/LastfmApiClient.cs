@@ -131,6 +131,73 @@ public class LastfmApiClient : ILastfmApiClient
     }
 
     /// <inheritdoc />
+    public async Task<ScrobbleResponse?> ScrobbleBatchAsync(
+        IReadOnlyList<ScrobbleInfo> scrobbles,
+        string sessionKey,
+        CancellationToken cancellationToken = default)
+    {
+        if (scrobbles.Count == 0)
+        {
+            return null;
+        }
+
+        if (scrobbles.Count > 50)
+        {
+            throw new ArgumentException("Cannot scrobble more than 50 tracks at once", nameof(scrobbles));
+        }
+
+        _logger.LogDebug("Batch scrobbling {Count} tracks", scrobbles.Count);
+
+        var parameters = new Dictionary<string, string>
+        {
+            ["method"] = "track.scrobble",
+            ["api_key"] = GetApiKey(),
+            ["sk"] = sessionKey
+        };
+
+        // Add indexed parameters for each track
+        for (var i = 0; i < scrobbles.Count; i++)
+        {
+            var scrobble = scrobbles[i];
+            parameters[$"artist[{i}]"] = scrobble.Artist;
+            parameters[$"track[{i}]"] = scrobble.Track;
+            parameters[$"timestamp[{i}]"] = scrobble.Timestamp.ToString(CultureInfo.InvariantCulture);
+
+            if (!string.IsNullOrEmpty(scrobble.Album))
+            {
+                parameters[$"album[{i}]"] = scrobble.Album;
+            }
+
+            if (!string.IsNullOrEmpty(scrobble.AlbumArtist))
+            {
+                parameters[$"albumArtist[{i}]"] = scrobble.AlbumArtist;
+            }
+
+            if (!string.IsNullOrEmpty(scrobble.MusicBrainzId))
+            {
+                parameters[$"mbid[{i}]"] = scrobble.MusicBrainzId;
+            }
+
+            if (scrobble.Duration.HasValue)
+            {
+                parameters[$"duration[{i}]"] = scrobble.Duration.Value.ToString(CultureInfo.InvariantCulture);
+            }
+        }
+
+        var response = await PostSignedAsync<ScrobbleResponse>(parameters, cancellationToken).ConfigureAwait(false);
+
+        if (response?.Scrobbles?.Attributes != null)
+        {
+            _logger.LogInformation(
+                "Batch scrobble complete: {Accepted} accepted, {Ignored} ignored",
+                response.Scrobbles.Attributes.Accepted,
+                response.Scrobbles.Attributes.Ignored);
+        }
+
+        return response;
+    }
+
+    /// <inheritdoc />
     public async Task<bool> UpdateNowPlayingAsync(
         ScrobbleInfo scrobble,
         string sessionKey,

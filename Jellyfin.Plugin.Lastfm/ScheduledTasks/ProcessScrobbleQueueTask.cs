@@ -3,8 +3,10 @@
 
 namespace Jellyfin.Plugin.Lastfm.ScheduledTasks;
 
+using Configuration;
 using MediaBrowser.Model.Tasks;
 using Microsoft.Extensions.Logging;
+using Models;
 using Queue;
 using Services;
 
@@ -13,6 +15,8 @@ using Services;
 /// </summary>
 public class ProcessScrobbleQueueTask : IScheduledTask
 {
+    private const int BatchSize = 50;
+
     private readonly IScrobbleQueue _queue;
     private readonly ILastfmApiClient _apiClient;
     private readonly ILogger<ProcessScrobbleQueueTask> _logger;
@@ -69,12 +73,84 @@ public class ProcessScrobbleQueueTask : IScheduledTask
 
         _logger.LogInformation("Processing {Count} pending scrobbles", totalPending);
 
-        // TODO: Implement queue processing
-        // 1. Get all configured users
-        // 2. For each user, get pending scrobbles
-        // 3. Submit in batches of 50
-        // 4. Remove successful scrobbles from queue
+        var config = Plugin.Instance?.Configuration;
+        if (config == null || !config.IsConfigured)
+        {
+            _logger.LogWarning("Plugin not configured, skipping queue processing");
+            progress.Report(100);
+            return;
+        }
 
-        progress.Report(100);
+        var usersToProcess = config.LastfmUsers
+            .Where(u => u.HasValidSession && u.Options.ScrobbleEnabled)
+            .ToList();
+
+        var totalProcessed = 0;
+        foreach (var userConfig in usersToProcess)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+
+            try
+            {
+                var processed = await ProcessUserQueueAsync(userConfig, cancellationToken).ConfigureAwait(false);
+                totalProcessed += processed;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error processing queue for user {User}", userConfig.Username);
+            }
+
+            progress.Report((double)totalProcessed / totalPending * 100);
+        }
+
+        _logger.LogInformation("Queue processing complete: {Processed} scrobbles submitted", totalProcessed);
+    }
+
+    private async Task<int> ProcessUserQueueAsync(LastfmUser userConfig, CancellationToken cancellationToken)
+    {
+        var pending = await _queue.GetPendingAsync(userConfig.JellyfinUserId).ConfigureAwait(false);
+        if (pending.Count == 0)
+        {
+            return 0;
+        }
+
+        _logger.LogInformation("Processing {Count} pending scrobbles for {User}", pending.Count, userConfig.Username);
+
+        var totalSubmitted = 0;
+
+        // Process in batches of 50
+        for (var i = 0; i < pending.Count; i += BatchSize)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+
+            var batch = pending.Skip(i).Take(BatchSize).ToList();
+            var response = await _apiClient.ScrobbleBatchAsync(batch, userConfig.SessionKey, cancellationToken)
+                .ConfigureAwait(false);
+
+            if (response?.Scrobbles?.Attributes != null)
+            {
+                var accepted = response.Scrobbles.Attributes.Accepted;
+                totalSubmitted += accepted;
+
+                // Remove successfully submitted scrobbles from queue
+                if (accepted > 0)
+                {
+                    await _queue.DequeueAsync(userConfig.JellyfinUserId, batch.Count).ConfigureAwait(false);
+                    _logger.LogDebug("Dequeued {Count} scrobbles for {User}", batch.Count, userConfig.Username);
+                }
+            }
+            else if (response?.IsError == true)
+            {
+                // Stop processing on error (rate limit, auth failure, etc.)
+                _logger.LogWarning(
+                    "Batch scrobble failed for {User}: {Error}",
+                    userConfig.Username,
+                    response.Error?.Message ?? "Unknown error");
+                break;
+            }
+        }
+
+        _logger.LogInformation("Submitted {Count} queued scrobbles for {User}", totalSubmitted, userConfig.Username);
+        return totalSubmitted;
     }
 }
