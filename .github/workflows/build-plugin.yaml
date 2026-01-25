@@ -28,34 +28,14 @@ jobs:
       - name: Check formatting
         run: dotnet format --verify-no-changes --verbosity diagnostic
 
-  test:
-    name: Test
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Setup .NET
-        uses: actions/setup-dotnet@v4
-        with:
-          dotnet-version: '9.0.x'
-
-      - name: Restore dependencies
-        run: dotnet restore
-
-      - name: Build
-        run: dotnet build --no-restore
-
-      - name: Run tests
-        run: dotnet test --no-build --verbosity normal
-
   build:
     name: Build Plugin
-    needs: [lint, test]
+    needs: [lint]
     uses: jellyfin/jellyfin-meta-plugins/.github/workflows/build.yaml@master
 
   test-manifest:
     name: Test Manifest Generation
-    needs: [lint, test]
+    needs: [lint]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4

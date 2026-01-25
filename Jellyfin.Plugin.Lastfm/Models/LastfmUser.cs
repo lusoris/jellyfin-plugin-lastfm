@@ -1,23 +1,51 @@
-namespace Jellyfin.Plugin.Lastfm.Models
+// GPL-2.0 License
+// https://github.com/lusoris/jellyfin-plugin-lastfm
+
+namespace Jellyfin.Plugin.Lastfm.Models;
+
+/// <summary>
+/// Last.fm user configuration.
+/// </summary>
+public class LastfmUser
 {
-    using System;
+    /// <summary>
+    /// Gets or sets the Last.fm username.
+    /// </summary>
+    public string Username { get; set; } = string.Empty;
 
-    public class LastfmUser
-    {
-        public string Username { get; set; }
+    /// <summary>
+    /// Gets or sets the Last.fm session key.
+    /// </summary>
+    public string SessionKey { get; set; } = string.Empty;
 
-        //We wont store the password, but instead store the session key since its a lifetime key
-        public string SessionKey { get; set; }
+    /// <summary>
+    /// Gets or sets the associated Jellyfin user ID.
+    /// </summary>
+    public Guid JellyfinUserId { get; set; }
 
-        public Guid MediaBrowserUserId { get; set; }
+    /// <summary>
+    /// Gets or sets the user options.
+    /// </summary>
+    public LastfmUserOptions Options { get; set; } = new();
+}
 
-        public LastFmUserOptions Options { get; set; }
-    }
+/// <summary>
+/// Per-user options for Last.fm features.
+/// </summary>
+public class LastfmUserOptions
+{
+    /// <summary>
+    /// Gets or sets a value indicating whether scrobbling is enabled.
+    /// </summary>
+    public bool ScrobbleEnabled { get; set; } = true;
 
-    public class LastFmUserOptions
-    {
-        public bool Scrobble { get; set; }
-        public bool SyncFavourites { get; set; }
-        public bool AlternativeMode { get; set; }
-    }
+    /// <summary>
+    /// Gets or sets a value indicating whether to sync favorites to loved tracks.
+    /// </summary>
+    public bool SyncFavorites { get; set; } = true;
+
+    /// <summary>
+    /// Gets or sets a value indicating whether to import loved tracks as favorites.
+    /// </summary>
+    public bool ImportLovedTracks { get; set; } = true;
 }
