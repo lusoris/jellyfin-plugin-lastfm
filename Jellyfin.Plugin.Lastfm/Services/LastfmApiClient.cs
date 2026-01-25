@@ -388,6 +388,63 @@ public class LastfmApiClient : ILastfmApiClient
         return response;
     }
 
+    /// <inheritdoc />
+    public async Task<SimilarArtistsResponse?> GetSimilarArtistsAsync(
+        string artist,
+        int limit = 100,
+        CancellationToken cancellationToken = default)
+    {
+        _logger.LogDebug("Fetching similar artists for {Artist}", artist);
+
+        var url = $"{ApiBaseUrl}?method=artist.getSimilar" +
+                  $"&artist={Uri.EscapeDataString(artist)}" +
+                  $"&api_key={GetApiKey()}" +
+                  $"&limit={limit}" +
+                  $"&format=json";
+
+        var response = await GetAsync<SimilarArtistsResponse>(url, cancellationToken).ConfigureAwait(false);
+
+        if (response?.SimilarArtists?.Artists != null)
+        {
+            _logger.LogDebug(
+                "Fetched {Count} similar artists for {Artist}",
+                response.SimilarArtists.Artists.Count,
+                artist);
+        }
+
+        return response;
+    }
+
+    /// <inheritdoc />
+    public async Task<SimilarTracksResponse?> GetSimilarTracksAsync(
+        string artist,
+        string track,
+        int limit = 100,
+        CancellationToken cancellationToken = default)
+    {
+        _logger.LogDebug("Fetching similar tracks for {Artist} - {Track}", artist, track);
+
+        var url = $"{ApiBaseUrl}?method=track.getSimilar" +
+                  $"&artist={Uri.EscapeDataString(artist)}" +
+                  $"&track={Uri.EscapeDataString(track)}" +
+                  $"&api_key={GetApiKey()}" +
+                  $"&limit={limit}" +
+                  $"&format=json";
+
+        var response = await GetAsync<SimilarTracksResponse>(url, cancellationToken).ConfigureAwait(false);
+
+        if (response?.SimilarTracks?.Tracks != null)
+        {
+            _logger.LogDebug(
+                "Fetched {Count} similar tracks for {Artist} - {Track}",
+                response.SimilarTracks.Tracks.Count,
+                artist,
+                track);
+        }
+
+        return response;
+    }
+
     /// <summary>
     /// Sends a signed POST request to the Last.fm API.
     /// </summary>

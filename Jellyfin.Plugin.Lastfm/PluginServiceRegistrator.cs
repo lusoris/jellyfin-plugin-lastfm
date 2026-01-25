@@ -24,6 +24,7 @@ public class PluginServiceRegistrator : IPluginServiceRegistrator
         serviceCollection.AddSingleton<IScrobbleService, ScrobbleService>();
         serviceCollection.AddSingleton<ITrackMatcherService, TrackMatcherService>();
         serviceCollection.AddSingleton<IScrobbleQueue, ScrobbleQueue>();
+        serviceCollection.AddSingleton<IPlaylistService, PlaylistService>();
 
         // Event Handlers (IHostedService)
         serviceCollection.AddHostedService<PlaybackEventHandler>();

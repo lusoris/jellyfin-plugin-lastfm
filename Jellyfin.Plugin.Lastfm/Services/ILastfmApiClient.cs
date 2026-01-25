@@ -63,4 +63,21 @@ public interface ILastfmApiClient
     /// <param name="limit">Results per page (max 1000).</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     Task<TopTracksResponse?> GetTopTracksAsync(string username, string period = "overall", int page = 1, int limit = 1000, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Gets artists similar to the specified artist.
+    /// </summary>
+    /// <param name="artist">Artist name.</param>
+    /// <param name="limit">Max number of results.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    Task<SimilarArtistsResponse?> GetSimilarArtistsAsync(string artist, int limit = 100, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Gets tracks similar to the specified track.
+    /// </summary>
+    /// <param name="artist">Artist name.</param>
+    /// <param name="track">Track name.</param>
+    /// <param name="limit">Max number of results.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    Task<SimilarTracksResponse?> GetSimilarTracksAsync(string artist, string track, int limit = 100, CancellationToken cancellationToken = default);
 }

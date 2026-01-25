@@ -25,6 +25,7 @@ public class LastfmController : ControllerBase
 {
     private readonly ILastfmApiClient _lastfmApiClient;
     private readonly IScrobbleQueue _scrobbleQueue;
+    private readonly IPlaylistService _playlistService;
     private readonly ILogger<LastfmController> _logger;
 
     /// <summary>
@@ -32,14 +33,17 @@ public class LastfmController : ControllerBase
     /// </summary>
     /// <param name="lastfmApiClient">Last.fm API client.</param>
     /// <param name="scrobbleQueue">Scrobble queue.</param>
+    /// <param name="playlistService">Playlist service.</param>
     /// <param name="logger">Logger.</param>
     public LastfmController(
         ILastfmApiClient lastfmApiClient,
         IScrobbleQueue scrobbleQueue,
+        IPlaylistService playlistService,
         ILogger<LastfmController> logger)
     {
         _lastfmApiClient = lastfmApiClient;
         _scrobbleQueue = scrobbleQueue;
+        _playlistService = playlistService;
         _logger = logger;
     }
 
@@ -178,6 +182,81 @@ public class LastfmController : ControllerBase
             OldestScrobble = pending.Count > 0 ? pending.Min(s => s.Timestamp) : null,
             NewestScrobble = pending.Count > 0 ? pending.Max(s => s.Timestamp) : null
         });
+    }
+
+    /// <summary>
+    /// Creates a playlist based on similar artists to the user's listening history.
+    /// </summary>
+    /// <param name="request">Playlist creation request.</param>
+    /// <returns>Playlist creation result.</returns>
+    [HttpPost("Playlists/SimilarArtists")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<ActionResult<PlaylistResult>> CreateSimilarArtistsPlaylist([FromBody] PlaylistRequest request)
+    {
+        _logger.LogInformation("Creating similar artists playlist for user {UserId}", request.UserId);
+
+        var result = await _playlistService.CreateSimilarArtistsPlaylistAsync(
+            request.UserId,
+            request.PlaylistName ?? "Similar Artists Mix",
+            request.MaxTracks ?? 50).ConfigureAwait(false);
+
+        if (!result.Success)
+        {
+            return BadRequest(result);
+        }
+
+        return Ok(result);
+    }
+
+    /// <summary>
+    /// Creates a playlist based on tracks similar to the user's loved tracks.
+    /// </summary>
+    /// <param name="request">Playlist creation request.</param>
+    /// <returns>Playlist creation result.</returns>
+    [HttpPost("Playlists/SimilarTracks")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<ActionResult<PlaylistResult>> CreateSimilarTracksPlaylist([FromBody] PlaylistRequest request)
+    {
+        _logger.LogInformation("Creating similar tracks playlist for user {UserId}", request.UserId);
+
+        var result = await _playlistService.CreateSimilarTracksPlaylistAsync(
+            request.UserId,
+            request.PlaylistName ?? "Similar Tracks Mix",
+            request.MaxTracks ?? 50).ConfigureAwait(false);
+
+        if (!result.Success)
+        {
+            return BadRequest(result);
+        }
+
+        return Ok(result);
+    }
+
+    /// <summary>
+    /// Creates a playlist to rediscover old favorites that haven't been played recently.
+    /// </summary>
+    /// <param name="request">Playlist creation request.</param>
+    /// <returns>Playlist creation result.</returns>
+    [HttpPost("Playlists/RediscoverFavorites")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<ActionResult<PlaylistResult>> CreateRediscoverFavoritesPlaylist([FromBody] PlaylistRequest request)
+    {
+        _logger.LogInformation("Creating rediscover favorites playlist for user {UserId}", request.UserId);
+
+        var result = await _playlistService.CreateRediscoverFavoritesPlaylistAsync(
+            request.UserId,
+            request.PlaylistName ?? "Rediscover Favorites",
+            request.MaxTracks ?? 50).ConfigureAwait(false);
+
+        if (!result.Success)
+        {
+            return BadRequest(result);
+        }
+
+        return Ok(result);
     }
 
     private void SaveUserSession(Guid jellyfinUserId, string username, string sessionKey)
@@ -348,4 +427,26 @@ public class QueueStatus
     /// Gets or sets the timestamp of the newest pending scrobble.
     /// </summary>
     public long? NewestScrobble { get; set; }
+}
+
+/// <summary>
+/// Request to create a playlist.
+/// </summary>
+public class PlaylistRequest
+{
+    /// <summary>
+    /// Gets or sets the Jellyfin user ID.
+    /// </summary>
+    [Required]
+    public Guid UserId { get; set; }
+
+    /// <summary>
+    /// Gets or sets the playlist name.
+    /// </summary>
+    public string? PlaylistName { get; set; }
+
+    /// <summary>
+    /// Gets or sets the maximum number of tracks.
+    /// </summary>
+    public int? MaxTracks { get; set; }
 }
