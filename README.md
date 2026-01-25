@@ -27,7 +27,3 @@ Steps:
    - **Windows (Direct)**: `%UserProfile%\AppData\Local\jellyfin\plugins\Lastfm\`
    - **Docker**: Mount or copy to `/config/plugins/Lastfm/` inside the container
 4. Restart Jellyfin
-
----
-
-![plugins](https://github.com/lusoris/jellyfin-plugin-lastfm/assets/465993/9adf1434-0ba8-4182-b267-6ce34d5933a7)
