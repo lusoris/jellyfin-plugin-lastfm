@@ -28,9 +28,6 @@ Steps:
    - **Docker**: Mount or copy to `/config/plugins/Lastfm/` inside the container
 4. Restart Jellyfin
 
-### Version Info
-Latest version targets **Jellyfin 10.11.6** with .NET 9.0
-
 ---
 
 ![plugins](https://github.com/lusoris/jellyfin-plugin-lastfm/assets/465993/9adf1434-0ba8-4182-b267-6ce34d5933a7)
