@@ -76,6 +76,20 @@ jobs:
         with:
           python-version: '3.12'
 
+      - name: Install yq for YAML parsing
+        run: |
+          sudo wget -qO /usr/local/bin/yq https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64
+          sudo chmod +x /usr/local/bin/yq
+
+      - name: Read build configuration
+        id: build_config
+        run: |
+          TARGET_ABI=$(yq '.targetAbi' build.yaml)
+          PLUGIN_VERSION=$(yq '.version' build.yaml)
+          echo "target_abi=$TARGET_ABI" >> $GITHUB_OUTPUT
+          echo "plugin_version=$PLUGIN_VERSION" >> $GITHUB_OUTPUT
+          echo "Using targetAbi: $TARGET_ABI, version: $PLUGIN_VERSION"
+
       - name: Build release
         run: dotnet build Jellyfin.Plugin.Lastfm/Jellyfin.Plugin.Lastfm.csproj -c Release
 
@@ -109,7 +123,7 @@ jobs:
             version \
             -ver "dev-${{ github.sha }}" \
             -cl "Development build from commit ${{ github.sha }}" \
-            -abi "10.11.6.0" \
+            -abi "${{ steps.build_config.outputs.target_abi }}" \
             -url "https://github.com/lusoris/jellyfin-plugin-lastfm/actions/runs/${{ github.run_id }}" \
             -ck "${CK}"
 
