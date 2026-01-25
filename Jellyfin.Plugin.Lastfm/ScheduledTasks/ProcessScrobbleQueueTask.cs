@@ -13,7 +13,7 @@ using Services;
 /// <summary>
 /// Scheduled task to process the offline scrobble queue.
 /// </summary>
-public class ProcessScrobbleQueueTask : IScheduledTask
+public sealed partial class ProcessScrobbleQueueTask : IScheduledTask
 {
     private const int BatchSize = 50;
 
@@ -66,17 +66,17 @@ public class ProcessScrobbleQueueTask : IScheduledTask
         var totalPending = await _queue.GetTotalPendingCountAsync().ConfigureAwait(false);
         if (totalPending == 0)
         {
-            _logger.LogDebug("No pending scrobbles in queue");
+            LogNoPending();
             progress.Report(100);
             return;
         }
 
-        _logger.LogInformation("Processing {Count} pending scrobbles", totalPending);
+        LogProcessingPending(totalPending);
 
         var config = Plugin.Instance?.Configuration;
         if (config == null || !config.IsConfigured)
         {
-            _logger.LogWarning("Plugin not configured, skipping queue processing");
+            LogPluginNotConfigured();
             progress.Report(100);
             return;
         }
@@ -97,13 +97,13 @@ public class ProcessScrobbleQueueTask : IScheduledTask
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error processing queue for user {User}", userConfig.Username);
+                LogProcessingError(ex, userConfig.Username);
             }
 
             progress.Report((double)totalProcessed / totalPending * 100);
         }
 
-        _logger.LogInformation("Queue processing complete: {Processed} scrobbles submitted", totalProcessed);
+        LogProcessingComplete(totalProcessed);
     }
 
     private async Task<int> ProcessUserQueueAsync(LastfmUser userConfig, CancellationToken cancellationToken)
@@ -114,7 +114,7 @@ public class ProcessScrobbleQueueTask : IScheduledTask
             return 0;
         }
 
-        _logger.LogInformation("Processing {Count} pending scrobbles for {User}", pending.Count, userConfig.Username);
+        LogProcessingUser(pending.Count, userConfig.Username);
 
         var totalSubmitted = 0;
 
@@ -136,21 +136,47 @@ public class ProcessScrobbleQueueTask : IScheduledTask
                 if (accepted > 0)
                 {
                     await _queue.DequeueAsync(userConfig.JellyfinUserId, batch.Count).ConfigureAwait(false);
-                    _logger.LogDebug("Dequeued {Count} scrobbles for {User}", batch.Count, userConfig.Username);
+                    LogDequeued(batch.Count, userConfig.Username);
                 }
             }
             else if (response?.IsError == true)
             {
                 // Stop processing on error (rate limit, auth failure, etc.)
-                _logger.LogWarning(
-                    "Batch scrobble failed for {User}: {Error}",
+                LogBatchFailed(
                     userConfig.Username,
                     response.Error?.Message ?? "Unknown error");
                 break;
             }
         }
 
-        _logger.LogInformation("Submitted {Count} queued scrobbles for {User}", totalSubmitted, userConfig.Username);
+        LogSubmittedQueuedScrobbles(totalSubmitted, userConfig.Username);
         return totalSubmitted;
     }
+
+    [LoggerMessage(Level = LogLevel.Debug, Message = "No pending scrobbles in queue")]
+    private partial void LogNoPending();
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "Processing {Count} pending scrobbles")]
+    private partial void LogProcessingPending(int count);
+
+    [LoggerMessage(Level = LogLevel.Warning, Message = "Plugin not configured, skipping queue processing")]
+    private partial void LogPluginNotConfigured();
+
+    [LoggerMessage(Level = LogLevel.Error, Message = "Error processing queue for user {User}")]
+    private partial void LogProcessingError(Exception ex, string user);
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "Queue processing complete: {Processed} scrobbles submitted")]
+    private partial void LogProcessingComplete(int processed);
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "Processing {Count} pending scrobbles for {User}")]
+    private partial void LogProcessingUser(int count, string user);
+
+    [LoggerMessage(Level = LogLevel.Debug, Message = "Dequeued {Count} scrobbles for {User}")]
+    private partial void LogDequeued(int count, string user);
+
+    [LoggerMessage(Level = LogLevel.Warning, Message = "Batch scrobble failed for {User}: {Error}")]
+    private partial void LogBatchFailed(string user, string error);
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "Submitted {Count} queued scrobbles for {User}")]
+    private partial void LogSubmittedQueuedScrobbles(int count, string user);
 }

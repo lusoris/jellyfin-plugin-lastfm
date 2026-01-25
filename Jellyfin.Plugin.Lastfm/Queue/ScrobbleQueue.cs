@@ -11,11 +11,12 @@ using Models;
 /// <summary>
 /// JSON file-based queue for storing scrobbles when offline.
 /// </summary>
-public class ScrobbleQueue : IScrobbleQueue
+public sealed partial class ScrobbleQueue : IScrobbleQueue, IDisposable
 {
     private readonly string _queueDirectory;
     private readonly ILogger<ScrobbleQueue> _logger;
     private readonly SemaphoreSlim _lock = new(1, 1);
+    private bool _disposed;
 
     private static readonly JsonSerializerOptions JsonOptions = new()
     {
@@ -43,7 +44,7 @@ public class ScrobbleQueue : IScrobbleQueue
             queue.Add(scrobble);
             await SaveQueueAsync(userId, queue).ConfigureAwait(false);
 
-            _logger.LogDebug("Enqueued scrobble for user {UserId}: {Artist} - {Track}", userId, scrobble.Artist, scrobble.Track);
+            LogEnqueuedScrobble(userId, scrobble.Artist, scrobble.Track);
         }
         finally
         {
@@ -141,4 +142,17 @@ public class ScrobbleQueue : IScrobbleQueue
         var json = JsonSerializer.Serialize(queue, JsonOptions);
         await File.WriteAllTextAsync(path, json).ConfigureAwait(false);
     }
+
+    /// <inheritdoc />
+    public void Dispose()
+    {
+        if (!_disposed)
+        {
+            _lock.Dispose();
+            _disposed = true;
+        }
+    }
+
+    [LoggerMessage(Level = LogLevel.Debug, Message = "Enqueued scrobble for user {UserId}: {Artist} - {Track}")]
+    private partial void LogEnqueuedScrobble(Guid userId, string artist, string track);
 }

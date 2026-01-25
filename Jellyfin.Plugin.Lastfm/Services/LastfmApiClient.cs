@@ -15,7 +15,7 @@ using Models.Responses;
 /// <summary>
 /// Client for the Last.fm API.
 /// </summary>
-public partial class LastfmApiClient : ILastfmApiClient
+public sealed partial class LastfmApiClient : ILastfmApiClient, IDisposable
 {
     private const string ApiBaseUrl = "https://ws.audioscrobbler.com/2.0/";
 
@@ -25,6 +25,7 @@ public partial class LastfmApiClient : ILastfmApiClient
     private readonly TimeProvider _timeProvider;
     private readonly SemaphoreSlim _rateLimiter = new(1, 1);
     private DateTimeOffset _lastRequestTime = DateTimeOffset.MinValue;
+    private bool _disposed;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="LastfmApiClient"/> class.
@@ -231,7 +232,7 @@ public partial class LastfmApiClient : ILastfmApiClient
 
         if (success)
         {
-            _logger.LogDebug("Now playing updated: {Artist} - {Track}", scrobble.Artist, scrobble.Track);
+            LogNowPlayingSuccess(scrobble.Artist, scrobble.Track);
         }
         else
         {
@@ -833,4 +834,14 @@ public partial class LastfmApiClient : ILastfmApiClient
 
     [LoggerMessage(Level = LogLevel.Error, Message = "Last.fm API request failed after {MaxRetries} retries")]
     private partial void LogMaxRetriesExceeded(int maxRetries);
+
+    /// <inheritdoc />
+    public void Dispose()
+    {
+        if (!_disposed)
+        {
+            _rateLimiter.Dispose();
+            _disposed = true;
+        }
+    }
 }

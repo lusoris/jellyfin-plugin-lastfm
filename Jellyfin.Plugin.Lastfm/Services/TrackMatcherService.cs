@@ -14,7 +14,7 @@ using Microsoft.Extensions.Logging;
 /// <summary>
 /// Matches Jellyfin tracks to Last.fm tracks.
 /// </summary>
-public partial class TrackMatcherService : ITrackMatcherService
+public sealed partial class TrackMatcherService : ITrackMatcherService
 {
     private readonly ILibraryManager _libraryManager;
     private readonly ILogger<TrackMatcherService> _logger;
@@ -37,7 +37,7 @@ public partial class TrackMatcherService : ITrackMatcherService
             var mbidMatch = FindByMusicBrainzId(lastfmMbid);
             if (mbidMatch != null)
             {
-                _logger.LogDebug("Found match by MusicBrainz ID: {Artist} - {Track}", lastfmArtist, lastfmTrack);
+                LogFoundMbidMatch(lastfmArtist, lastfmTrack);
                 return Task.FromResult<Audio?>(mbidMatch);
             }
         }
@@ -46,7 +46,7 @@ public partial class TrackMatcherService : ITrackMatcherService
         var exactMatch = FindByExactName(lastfmArtist, lastfmTrack);
         if (exactMatch != null)
         {
-            _logger.LogDebug("Found exact match: {Artist} - {Track}", lastfmArtist, lastfmTrack);
+            LogFoundExactMatch(lastfmArtist, lastfmTrack);
             return Task.FromResult<Audio?>(exactMatch);
         }
 
@@ -54,32 +54,46 @@ public partial class TrackMatcherService : ITrackMatcherService
         var fuzzyMatch = FindByFuzzyName(lastfmArtist, lastfmTrack);
         if (fuzzyMatch != null)
         {
-            _logger.LogDebug("Found fuzzy match: {Artist} - {Track} => {MatchArtist} - {MatchTrack}",
-                lastfmArtist, lastfmTrack, fuzzyMatch.Artists.FirstOrDefault(), fuzzyMatch.Name);
+            LogFoundFuzzyMatch(lastfmArtist, lastfmTrack, fuzzyMatch.Artists.FirstOrDefault(), fuzzyMatch.Name);
             return Task.FromResult<Audio?>(fuzzyMatch);
         }
 
-        _logger.LogDebug("No match found for: {Artist} - {Track}", lastfmArtist, lastfmTrack);
+        LogNoMatchFound(lastfmArtist, lastfmTrack);
         return Task.FromResult<Audio?>(null);
     }
 
     private Audio? FindByMusicBrainzId(string mbid)
     {
+        // Use provider ID filter directly in query for efficiency
+        // Try MusicBrainzRecording first (preferred), then MusicBrainzTrack
         var query = new InternalItemsQuery
         {
             IncludeItemTypes = [BaseItemKind.Audio],
             Recursive = true,
-            Limit = 1
+            Limit = 1,
+            HasAnyProviderId = new Dictionary<string, string>
+            {
+                [MetadataProvider.MusicBrainzRecording.ToString()] = mbid
+            }
         };
 
-        var items = _libraryManager.GetItemList(query);
-
-        return items
+        var result = _libraryManager.GetItemList(query)
             .OfType<Audio>()
-            .FirstOrDefault(a => string.Equals(
-                a.GetProviderId(MetadataProvider.MusicBrainzTrack),
-                mbid,
-                StringComparison.OrdinalIgnoreCase));
+            .FirstOrDefault();
+
+        // Fallback to MusicBrainzTrack if not found
+        if (result == null)
+        {
+            query.HasAnyProviderId = new Dictionary<string, string>
+            {
+                [MetadataProvider.MusicBrainzTrack.ToString()] = mbid
+            };
+            result = _libraryManager.GetItemList(query)
+                .OfType<Audio>()
+                .FirstOrDefault();
+        }
+
+        return result;
     }
 
     private Audio? FindByExactName(string artist, string track)
@@ -142,4 +156,16 @@ public partial class TrackMatcherService : ITrackMatcherService
 
     [GeneratedRegex(@"\s+")]
     private static partial Regex WhitespaceRegex();
+
+    [LoggerMessage(Level = LogLevel.Debug, Message = "Found match by MusicBrainz ID: {Artist} - {Track}")]
+    private partial void LogFoundMbidMatch(string artist, string track);
+
+    [LoggerMessage(Level = LogLevel.Debug, Message = "Found exact match: {Artist} - {Track}")]
+    private partial void LogFoundExactMatch(string artist, string track);
+
+    [LoggerMessage(Level = LogLevel.Debug, Message = "Found fuzzy match: {Artist} - {Track} => {MatchArtist} - {MatchTrack}")]
+    private partial void LogFoundFuzzyMatch(string artist, string track, string? matchArtist, string? matchTrack);
+
+    [LoggerMessage(Level = LogLevel.Debug, Message = "No match found for: {Artist} - {Track}")]
+    private partial void LogNoMatchFound(string artist, string track);
 }

@@ -16,7 +16,7 @@ using Services;
 /// <summary>
 /// Handles playback events for scrobbling and now playing updates.
 /// </summary>
-public class PlaybackEventHandler : IHostedService, IDisposable
+public sealed partial class PlaybackEventHandler : IHostedService, IDisposable
 {
     private readonly ISessionManager _sessionManager;
     private readonly ILastfmApiClient _apiClient;
@@ -48,7 +48,7 @@ public class PlaybackEventHandler : IHostedService, IDisposable
         _sessionManager.PlaybackStart += OnPlaybackStart;
         _sessionManager.PlaybackStopped += OnPlaybackStopped;
 
-        _logger.LogInformation("Last.fm playback event handler started");
+        LogHandlerStarted();
         return Task.CompletedTask;
     }
 
@@ -58,7 +58,7 @@ public class PlaybackEventHandler : IHostedService, IDisposable
         _sessionManager.PlaybackStart -= OnPlaybackStart;
         _sessionManager.PlaybackStopped -= OnPlaybackStopped;
 
-        _logger.LogInformation("Last.fm playback event handler stopped");
+        LogHandlerStopped();
         return Task.CompletedTask;
     }
 
@@ -80,7 +80,7 @@ public class PlaybackEventHandler : IHostedService, IDisposable
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error handling playback start event");
+            LogPlaybackStartError(ex);
         }
     }
 
@@ -103,7 +103,7 @@ public class PlaybackEventHandler : IHostedService, IDisposable
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error handling playback stopped event");
+            LogPlaybackStoppedError(ex);
         }
     }
 
@@ -132,8 +132,7 @@ public class PlaybackEventHandler : IHostedService, IDisposable
             return;
         }
 
-        _logger.LogDebug(
-            "Sending now playing for {User}: {Artist} - {Track}",
+        LogSendingNowPlaying(
             userConfig.Username,
             scrobbleInfo.Artist,
             scrobbleInfo.Track);
@@ -164,8 +163,7 @@ public class PlaybackEventHandler : IHostedService, IDisposable
         var trackLengthTicks = audio.RunTimeTicks ?? 0;
         if (!_scrobbleService.IsScrobbleEligible(trackLengthTicks, playedTicks) && !playedToCompletion)
         {
-            _logger.LogDebug(
-                "Track not eligible for scrobble: {Artist} - {Track} (played {Percent:F1}%)",
+            LogTrackNotEligible(
                 audio.Artists.FirstOrDefault(),
                 audio.Name,
                 trackLengthTicks > 0 ? (double)playedTicks / trackLengthTicks * 100 : 0);
@@ -175,8 +173,7 @@ public class PlaybackEventHandler : IHostedService, IDisposable
         // Check for duplicate
         if (_scrobbleService.IsDuplicateScrobble(userId, audio.Id))
         {
-            _logger.LogDebug(
-                "Skipping duplicate scrobble: {Artist} - {Track}",
+            LogSkippingDuplicate(
                 audio.Artists.FirstOrDefault(),
                 audio.Name);
             return;
@@ -191,8 +188,7 @@ public class PlaybackEventHandler : IHostedService, IDisposable
         // Set timestamp to when playback started (now minus played time)
         scrobbleInfo.Timestamp = DateTimeOffset.UtcNow.ToUnixTimeSeconds() - (playedTicks / TimeSpan.TicksPerSecond);
 
-        _logger.LogInformation(
-            "Scrobbling for {User}: {Artist} - {Track}",
+        LogScrobbling(
             userConfig.Username,
             scrobbleInfo.Artist,
             scrobbleInfo.Track);
@@ -208,8 +204,7 @@ public class PlaybackEventHandler : IHostedService, IDisposable
             else if (response?.IsError == true && IsRetryableError(response.ErrorCode))
             {
                 // Queue for retry on network/rate limit errors
-                _logger.LogWarning(
-                    "Scrobble failed, queueing for retry: {Artist} - {Track} (Error: {Error})",
+                LogScrobbleFailedQueueing(
                     scrobbleInfo.Artist,
                     scrobbleInfo.Track,
                     response.Error?.Message ?? "Unknown");
@@ -219,9 +214,8 @@ public class PlaybackEventHandler : IHostedService, IDisposable
         catch (HttpRequestException ex)
         {
             // Network error - queue for retry
-            _logger.LogWarning(
+            LogNetworkErrorQueueing(
                 ex,
-                "Network error scrobbling, queueing for retry: {Artist} - {Track}",
                 scrobbleInfo.Artist,
                 scrobbleInfo.Track);
             await _scrobbleQueue.EnqueueAsync(userId, scrobbleInfo).ConfigureAwait(false);
@@ -254,7 +248,13 @@ public class PlaybackEventHandler : IHostedService, IDisposable
             Track = audio.Name,
             Album = audio.Album,
             AlbumArtist = audio.AlbumArtists.FirstOrDefault(),
-            MusicBrainzId = audio.ProviderIds.TryGetValue("MusicBrainzTrack", out var mbid) ? mbid : null,
+            // Prefer MusicBrainzRecording (recording MBID) over MusicBrainzTrack (release-specific track MBID)
+            // Last.fm uses recording MBIDs for track matching
+            MusicBrainzId = audio.ProviderIds.TryGetValue("MusicBrainzRecording", out var mbid)
+                ? mbid
+                : audio.ProviderIds.TryGetValue("MusicBrainzTrack", out var trackMbid)
+                    ? trackMbid
+                    : null,
             Duration = audio.RunTimeTicks.HasValue
                 ? (int)(audio.RunTimeTicks.Value / TimeSpan.TicksPerSecond)
                 : null,
@@ -272,7 +272,7 @@ public class PlaybackEventHandler : IHostedService, IDisposable
     /// <summary>
     /// Disposes managed resources.
     /// </summary>
-    protected virtual void Dispose(bool disposing)
+    private void Dispose(bool disposing)
     {
         if (!_disposed)
         {
@@ -285,4 +285,34 @@ public class PlaybackEventHandler : IHostedService, IDisposable
             _disposed = true;
         }
     }
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "Last.fm playback event handler started")]
+    private partial void LogHandlerStarted();
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "Last.fm playback event handler stopped")]
+    private partial void LogHandlerStopped();
+
+    [LoggerMessage(Level = LogLevel.Error, Message = "Error handling playback start event")]
+    private partial void LogPlaybackStartError(Exception ex);
+
+    [LoggerMessage(Level = LogLevel.Error, Message = "Error handling playback stopped event")]
+    private partial void LogPlaybackStoppedError(Exception ex);
+
+    [LoggerMessage(Level = LogLevel.Debug, Message = "Sending now playing for {User}: {Artist} - {Track}")]
+    private partial void LogSendingNowPlaying(string user, string artist, string track);
+
+    [LoggerMessage(Level = LogLevel.Debug, Message = "Track not eligible for scrobble: {Artist} - {Track} (played {Percent:F1}%)")]
+    private partial void LogTrackNotEligible(string? artist, string? track, double percent);
+
+    [LoggerMessage(Level = LogLevel.Debug, Message = "Skipping duplicate scrobble: {Artist} - {Track}")]
+    private partial void LogSkippingDuplicate(string? artist, string? track);
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "Scrobbling for {User}: {Artist} - {Track}")]
+    private partial void LogScrobbling(string user, string artist, string track);
+
+    [LoggerMessage(Level = LogLevel.Warning, Message = "Scrobble failed, queueing for retry: {Artist} - {Track} (Error: {Error})")]
+    private partial void LogScrobbleFailedQueueing(string artist, string track, string error);
+
+    [LoggerMessage(Level = LogLevel.Warning, Message = "Network error scrobbling, queueing for retry: {Artist} - {Track}")]
+    private partial void LogNetworkErrorQueueing(Exception ex, string artist, string track);
 }

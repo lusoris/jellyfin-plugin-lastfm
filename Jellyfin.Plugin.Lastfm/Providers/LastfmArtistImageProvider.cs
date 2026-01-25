@@ -14,8 +14,10 @@ using Services;
 /// <summary>
 /// Image provider for artist images from Last.fm.
 /// </summary>
-public class LastfmArtistImageProvider : LastfmImageProviderBase<MusicArtist>
+public sealed partial class LastfmArtistImageProvider : LastfmImageProviderBase<MusicArtist>
 {
+    private readonly ILogger<LastfmArtistImageProvider> _logger;
+
     /// <summary>
     /// Initializes a new instance of the <see cref="LastfmArtistImageProvider"/> class.
     /// </summary>
@@ -25,6 +27,7 @@ public class LastfmArtistImageProvider : LastfmImageProviderBase<MusicArtist>
         ILogger<LastfmArtistImageProvider> logger)
         : base(lastfmApiClient, httpClientFactory, logger)
     {
+        _logger = logger;
     }
 
     /// <inheritdoc />
@@ -38,7 +41,7 @@ public class LastfmArtistImageProvider : LastfmImageProviderBase<MusicArtist>
         var artistName = artist.Name;
         var mbid = artist.GetProviderId(MetadataProvider.MusicBrainzArtist);
 
-        Logger.LogDebug("Fetching Last.fm images for artist {ArtistName} (MBID: {Mbid})", artistName, mbid ?? "N/A");
+        LogFetchingArtistImages(artistName, mbid ?? "N/A");
 
         try
         {
@@ -51,8 +54,14 @@ public class LastfmArtistImageProvider : LastfmImageProviderBase<MusicArtist>
         }
         catch (Exception ex)
         {
-            Logger.LogError(ex, "Error fetching images for artist {ArtistName}", artistName);
+            LogFetchingArtistImagesError(ex, artistName);
             return [];
         }
     }
+
+    [LoggerMessage(Level = LogLevel.Debug, Message = "Fetching Last.fm images for artist {ArtistName} (MBID: {Mbid})")]
+    private partial void LogFetchingArtistImages(string artistName, string mbid);
+
+    [LoggerMessage(Level = LogLevel.Error, Message = "Error fetching images for artist {ArtistName}")]
+    private partial void LogFetchingArtistImagesError(Exception ex, string artistName);
 }

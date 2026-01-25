@@ -11,7 +11,7 @@ using System.Text;
 /// <summary>
 /// Generates MD5 signatures for Last.fm API requests.
 /// </summary>
-public class SignatureGenerator : ISignatureGenerator
+public sealed class SignatureGenerator : ISignatureGenerator
 {
     /// <summary>
     /// Stack allocation threshold for MD5 input buffer.
@@ -64,7 +64,8 @@ public class SignatureGenerator : ISignatureGenerator
             Span<byte> hashBytes = stackalloc byte[16]; // MD5 produces 16 bytes
             MD5.HashData(inputBytes, hashBytes);
 
-            return Convert.ToHexString(hashBytes);
+            // Last.fm requires lowercase hex string
+            return Convert.ToHexStringLower(hashBytes);
         }
         else
         {
@@ -75,7 +76,8 @@ public class SignatureGenerator : ISignatureGenerator
                 var inputBytes = rentedBuffer.AsSpan(0, written);
                 var hashBytes = MD5.HashData(inputBytes);
 
-                return Convert.ToHexString(hashBytes);
+                // Last.fm requires lowercase hex string
+                return Convert.ToHexStringLower(hashBytes);
             }
             finally
             {

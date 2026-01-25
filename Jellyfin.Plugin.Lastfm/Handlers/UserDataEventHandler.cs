@@ -14,7 +14,7 @@ using Services;
 /// <summary>
 /// Handles user data changes for syncing favorites to Last.fm loved tracks.
 /// </summary>
-public class UserDataEventHandler : IHostedService, IDisposable
+public sealed partial class UserDataEventHandler : IHostedService, IDisposable
 {
     private readonly IUserDataManager _userDataManager;
     private readonly ILastfmApiClient _apiClient;
@@ -39,7 +39,7 @@ public class UserDataEventHandler : IHostedService, IDisposable
     {
         _userDataManager.UserDataSaved += OnUserDataSaved;
 
-        _logger.LogInformation("Last.fm user data event handler started");
+        LogHandlerStarted();
         return Task.CompletedTask;
     }
 
@@ -48,7 +48,7 @@ public class UserDataEventHandler : IHostedService, IDisposable
     {
         _userDataManager.UserDataSaved -= OnUserDataSaved;
 
-        _logger.LogInformation("Last.fm user data event handler stopped");
+        LogHandlerStopped();
         return Task.CompletedTask;
     }
 
@@ -63,7 +63,9 @@ public class UserDataEventHandler : IHostedService, IDisposable
             }
 
             // Only handle favorite changes
+            // IsFavorite can be changed via UpdateUserRating, UpdateUserData, or TogglePlayed
             if (e.SaveReason != UserDataSaveReason.UpdateUserRating &&
+                e.SaveReason != UserDataSaveReason.UpdateUserData &&
                 e.SaveReason != UserDataSaveReason.TogglePlayed)
             {
                 return;
@@ -98,14 +100,13 @@ public class UserDataEventHandler : IHostedService, IDisposable
             var artist = audio.Artists.FirstOrDefault();
             if (string.IsNullOrEmpty(artist) || string.IsNullOrEmpty(audio.Name))
             {
-                _logger.LogDebug("Cannot sync favorite: missing artist or track name");
+                LogMissingArtistOrTrack();
                 return;
             }
 
             if (isFavorite)
             {
-                _logger.LogInformation(
-                    "Syncing favorite to Last.fm loved: {Artist} - {Track} for {User}",
+                LogSyncingFavorite(
                     artist,
                     audio.Name,
                     userConfig.Username);
@@ -114,8 +115,7 @@ public class UserDataEventHandler : IHostedService, IDisposable
             }
             else
             {
-                _logger.LogInformation(
-                    "Syncing unfavorite to Last.fm unloved: {Artist} - {Track} for {User}",
+                LogSyncingUnfavorite(
                     artist,
                     audio.Name,
                     userConfig.Username);
@@ -125,7 +125,7 @@ public class UserDataEventHandler : IHostedService, IDisposable
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error handling user data saved event");
+            LogUserDataSavedError(ex);
         }
     }
 
@@ -139,7 +139,7 @@ public class UserDataEventHandler : IHostedService, IDisposable
     /// <summary>
     /// Disposes managed resources.
     /// </summary>
-    protected virtual void Dispose(bool disposing)
+    private void Dispose(bool disposing)
     {
         if (!_disposed)
         {
@@ -151,4 +151,22 @@ public class UserDataEventHandler : IHostedService, IDisposable
             _disposed = true;
         }
     }
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "Last.fm user data event handler started")]
+    private partial void LogHandlerStarted();
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "Last.fm user data event handler stopped")]
+    private partial void LogHandlerStopped();
+
+    [LoggerMessage(Level = LogLevel.Debug, Message = "Cannot sync favorite: missing artist or track name")]
+    private partial void LogMissingArtistOrTrack();
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "Syncing favorite to Last.fm loved: {Artist} - {Track} for {User}")]
+    private partial void LogSyncingFavorite(string artist, string track, string user);
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "Syncing unfavorite to Last.fm unloved: {Artist} - {Track} for {User}")]
+    private partial void LogSyncingUnfavorite(string artist, string track, string user);
+
+    [LoggerMessage(Level = LogLevel.Error, Message = "Error handling user data saved event")]
+    private partial void LogUserDataSavedError(Exception ex);
 }

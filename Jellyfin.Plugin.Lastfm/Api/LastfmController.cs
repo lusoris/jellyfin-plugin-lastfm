@@ -21,7 +21,7 @@ using Services;
 [Authorize]
 [Route("Lastfm")]
 [Produces(MediaTypeNames.Application.Json)]
-public class LastfmController : ControllerBase
+public sealed partial class LastfmController : ControllerBase
 {
     private readonly ILastfmApiClient _lastfmApiClient;
     private readonly IScrobbleQueue _scrobbleQueue;
@@ -69,14 +69,14 @@ public class LastfmController : ControllerBase
             return BadRequest(new AuthenticationResult { Success = false, Error = "Plugin API credentials not configured" });
         }
 
-        _logger.LogInformation("Authenticating user {UserId} with Last.fm username {LastfmUsername}", request.JellyfinUserId, request.Username);
+        LogAuthenticating(request.JellyfinUserId, request.Username);
 
         var response = await _lastfmApiClient.GetMobileSessionAsync(request.Username, request.Password).ConfigureAwait(false);
 
         if (response?.Session == null)
         {
             var errorMessage = response?.Error?.Message ?? "Authentication failed";
-            _logger.LogWarning("Last.fm authentication failed for {Username}: {Error}", request.Username, errorMessage);
+            LogAuthenticationFailed(request.Username, errorMessage);
 
             return Unauthorized(new AuthenticationResult
             {
@@ -88,7 +88,7 @@ public class LastfmController : ControllerBase
         // Save the session
         SaveUserSession(request.JellyfinUserId, response.Session.Name, response.Session.Key);
 
-        _logger.LogInformation("Last.fm authentication successful for {Username}", response.Session.Name);
+        LogAuthenticationSuccess(response.Session.Name);
 
         return Ok(new AuthenticationResult
         {
@@ -152,7 +152,7 @@ public class LastfmController : ControllerBase
             return NotFound(new DisconnectResult { Success = false, Error = "User not found" });
         }
 
-        _logger.LogInformation("Disconnecting user {UserId} from Last.fm account {Username}", userId, user.Username);
+        LogDisconnecting(userId, user.Username);
 
         // Clear the session
         user.SessionKey = string.Empty;
@@ -194,7 +194,7 @@ public class LastfmController : ControllerBase
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<ActionResult<PlaylistResult>> CreateSimilarArtistsPlaylist([FromBody] PlaylistRequest request)
     {
-        _logger.LogInformation("Creating similar artists playlist for user {UserId}", request.UserId);
+        LogCreatingSimilarArtistsPlaylist(request.UserId);
 
         var result = await _playlistService.CreateSimilarArtistsPlaylistAsync(
             request.UserId,
@@ -219,7 +219,7 @@ public class LastfmController : ControllerBase
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<ActionResult<PlaylistResult>> CreateSimilarTracksPlaylist([FromBody] PlaylistRequest request)
     {
-        _logger.LogInformation("Creating similar tracks playlist for user {UserId}", request.UserId);
+        LogCreatingSimilarTracksPlaylist(request.UserId);
 
         var result = await _playlistService.CreateSimilarTracksPlaylistAsync(
             request.UserId,
@@ -244,7 +244,7 @@ public class LastfmController : ControllerBase
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<ActionResult<PlaylistResult>> CreateRediscoverFavoritesPlaylist([FromBody] PlaylistRequest request)
     {
-        _logger.LogInformation("Creating rediscover favorites playlist for user {UserId}", request.UserId);
+        LogCreatingRediscoverPlaylist(request.UserId);
 
         var result = await _playlistService.CreateRediscoverFavoritesPlaylistAsync(
             request.UserId,
@@ -269,7 +269,7 @@ public class LastfmController : ControllerBase
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<ActionResult<PlaylistResult>> CreateWeeklyMixtapePlaylist([FromBody] PlaylistRequest request)
     {
-        _logger.LogInformation("Creating weekly mixtape for user {UserId}", request.UserId);
+        LogCreatingWeeklyMixtape(request.UserId);
 
         var result = await _playlistService.CreateWeeklyMixtapeAsync(
             request.UserId,
@@ -294,7 +294,7 @@ public class LastfmController : ControllerBase
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<ActionResult<PlaylistResult>> CreateTagDiscoveryPlaylist([FromBody] PlaylistRequest request)
     {
-        _logger.LogInformation("Creating tag discovery playlist for user {UserId}", request.UserId);
+        LogCreatingTagDiscoveryPlaylist(request.UserId);
 
         var result = await _playlistService.CreateTagDiscoveryPlaylistAsync(
             request.UserId,
@@ -309,7 +309,7 @@ public class LastfmController : ControllerBase
         return Ok(result);
     }
 
-    private void SaveUserSession(Guid jellyfinUserId, string username, string sessionKey)
+    private static void SaveUserSession(Guid jellyfinUserId, string username, string sessionKey)
     {
         var plugin = Plugin.Instance;
         if (plugin == null)
@@ -339,6 +339,33 @@ public class LastfmController : ControllerBase
 
         plugin.SaveConfiguration();
     }
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "Authenticating user {UserId} with Last.fm username {LastfmUsername}")]
+    private partial void LogAuthenticating(Guid userId, string lastfmUsername);
+
+    [LoggerMessage(Level = LogLevel.Warning, Message = "Last.fm authentication failed for {Username}: {Error}")]
+    private partial void LogAuthenticationFailed(string username, string error);
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "Last.fm authentication successful for {Username}")]
+    private partial void LogAuthenticationSuccess(string username);
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "Disconnecting user {UserId} from Last.fm account {Username}")]
+    private partial void LogDisconnecting(Guid userId, string username);
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "Creating similar artists playlist for user {UserId}")]
+    private partial void LogCreatingSimilarArtistsPlaylist(Guid userId);
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "Creating similar tracks playlist for user {UserId}")]
+    private partial void LogCreatingSimilarTracksPlaylist(Guid userId);
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "Creating rediscover favorites playlist for user {UserId}")]
+    private partial void LogCreatingRediscoverPlaylist(Guid userId);
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "Creating weekly mixtape for user {UserId}")]
+    private partial void LogCreatingWeeklyMixtape(Guid userId);
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "Creating tag discovery playlist for user {UserId}")]
+    private partial void LogCreatingTagDiscoveryPlaylist(Guid userId);
 }
 
 /// <summary>

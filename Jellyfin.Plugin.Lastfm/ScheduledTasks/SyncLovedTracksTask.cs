@@ -14,7 +14,7 @@ using Services;
 /// <summary>
 /// Scheduled task to sync loved tracks from Last.fm to Jellyfin favorites.
 /// </summary>
-public class SyncLovedTracksTask : IScheduledTask
+public sealed partial class SyncLovedTracksTask : IScheduledTask
 {
     private readonly ILastfmApiClient _apiClient;
     private readonly ITrackMatcherService _trackMatcher;
@@ -68,12 +68,12 @@ public class SyncLovedTracksTask : IScheduledTask
     /// <inheritdoc />
     public async Task ExecuteAsync(IProgress<double> progress, CancellationToken cancellationToken)
     {
-        _logger.LogInformation("Starting Last.fm loved tracks sync");
+        LogStartingLovedTracksSync();
 
         var config = Plugin.Instance?.Configuration;
         if (config == null || !config.IsConfigured)
         {
-            _logger.LogWarning("Plugin not configured, skipping loved tracks sync");
+            LogPluginNotConfigured();
             progress.Report(100);
             return;
         }
@@ -84,7 +84,7 @@ public class SyncLovedTracksTask : IScheduledTask
 
         if (usersToSync.Count == 0)
         {
-            _logger.LogInformation("No users configured for loved tracks import");
+            LogNoUsersConfigured();
             progress.Report(100);
             return;
         }
@@ -100,24 +100,24 @@ public class SyncLovedTracksTask : IScheduledTask
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error syncing loved tracks for user {User}", userConfig.Username);
+                LogSyncError(ex, userConfig.Username);
             }
 
             processedUsers++;
             progress.Report((double)processedUsers / usersToSync.Count * 100);
         }
 
-        _logger.LogInformation("Completed Last.fm loved tracks sync");
+        LogCompletedLovedTracksSync();
     }
 
     private async Task SyncUserLovedTracksAsync(LastfmUser userConfig, CancellationToken cancellationToken)
     {
-        _logger.LogInformation("Syncing loved tracks for user {User}", userConfig.Username);
+        LogSyncingUser(userConfig.Username);
 
         var jellyfinUser = _userManager.GetUserById(userConfig.JellyfinUserId);
         if (jellyfinUser == null)
         {
-            _logger.LogWarning("Jellyfin user {UserId} not found", userConfig.JellyfinUserId);
+            LogUserNotFound(userConfig.JellyfinUserId);
             return;
         }
 
@@ -167,7 +167,7 @@ public class SyncLovedTracksTask : IScheduledTask
                     userData.IsFavorite = true;
                     _userDataManager.SaveUserData(jellyfinUser, match, userData, UserDataSaveReason.Import, CancellationToken.None);
                     totalMatched++;
-                    _logger.LogDebug("Marked as favorite: {Artist} - {Track}", artistName, lovedTrack.Name);
+                    LogMarkedAsFavorite(artistName, lovedTrack.Name);
                 }
             }
 
@@ -184,10 +184,33 @@ public class SyncLovedTracksTask : IScheduledTask
         // Update sync time
         userConfig.Options.LastLovedTracksSyncTime = DateTime.UtcNow;
 
-        _logger.LogInformation(
-            "Synced loved tracks for {User}: {Matched} matched out of {Total} processed",
-            userConfig.Username,
-            totalMatched,
-            totalProcessed);
+        LogSyncedLovedTracks(userConfig.Username, totalMatched, totalProcessed);
     }
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "Starting Last.fm loved tracks sync")]
+    private partial void LogStartingLovedTracksSync();
+
+    [LoggerMessage(Level = LogLevel.Warning, Message = "Plugin not configured, skipping loved tracks sync")]
+    private partial void LogPluginNotConfigured();
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "No users configured for loved tracks import")]
+    private partial void LogNoUsersConfigured();
+
+    [LoggerMessage(Level = LogLevel.Error, Message = "Error syncing loved tracks for user {User}")]
+    private partial void LogSyncError(Exception ex, string user);
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "Completed Last.fm loved tracks sync")]
+    private partial void LogCompletedLovedTracksSync();
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "Syncing loved tracks for user {User}")]
+    private partial void LogSyncingUser(string user);
+
+    [LoggerMessage(Level = LogLevel.Warning, Message = "Jellyfin user {UserId} not found")]
+    private partial void LogUserNotFound(Guid userId);
+
+    [LoggerMessage(Level = LogLevel.Debug, Message = "Marked as favorite: {Artist} - {Track}")]
+    private partial void LogMarkedAsFavorite(string artist, string track);
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "Synced loved tracks for {User}: {Matched} matched out of {Total} processed")]
+    private partial void LogSyncedLovedTracks(string user, int matched, int total);
 }

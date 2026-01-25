@@ -10,7 +10,7 @@ using Models;
 /// <summary>
 /// Validates and manages scrobbles according to Last.fm rules.
 /// </summary>
-public class ScrobbleService : IScrobbleService, IDisposable
+public sealed class ScrobbleService : IScrobbleService, IDisposable
 {
     /// <summary>
     /// Minimum track length to be eligible for scrobbling (30 seconds).
@@ -78,23 +78,12 @@ public class ScrobbleService : IScrobbleService, IDisposable
     /// <inheritdoc />
     public void Dispose()
     {
-        Dispose(true);
-        GC.SuppressFinalize(this);
-    }
-
-    /// <summary>
-    /// Disposes managed resources.
-    /// </summary>
-    protected virtual void Dispose(bool disposing)
-    {
         if (!_disposed)
         {
-            if (disposing)
-            {
-                _scrobbleCache.Dispose();
-            }
-
+            _scrobbleCache.Dispose();
             _disposed = true;
         }
+
+        GC.SuppressFinalize(this);
     }
 }

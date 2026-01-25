@@ -14,7 +14,7 @@ using Services;
 /// <summary>
 /// Scheduled task to sync play counts from Last.fm to Jellyfin.
 /// </summary>
-public class SyncPlayCountsTask : IScheduledTask
+public sealed partial class SyncPlayCountsTask : IScheduledTask
 {
     private readonly ILastfmApiClient _apiClient;
     private readonly ITrackMatcherService _trackMatcher;
@@ -68,12 +68,12 @@ public class SyncPlayCountsTask : IScheduledTask
     /// <inheritdoc />
     public async Task ExecuteAsync(IProgress<double> progress, CancellationToken cancellationToken)
     {
-        _logger.LogInformation("Starting Last.fm play counts sync");
+        LogStartingPlayCountsSync();
 
         var config = Plugin.Instance?.Configuration;
         if (config == null || !config.IsConfigured)
         {
-            _logger.LogWarning("Plugin not configured, skipping play counts sync");
+            LogPluginNotConfigured();
             progress.Report(100);
             return;
         }
@@ -84,7 +84,7 @@ public class SyncPlayCountsTask : IScheduledTask
 
         if (usersToSync.Count == 0)
         {
-            _logger.LogInformation("No users configured for play counts import");
+            LogNoUsersConfigured();
             progress.Report(100);
             return;
         }
@@ -101,14 +101,14 @@ public class SyncPlayCountsTask : IScheduledTask
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error syncing play counts for user {User}", userConfig.Username);
+                LogSyncError(ex, userConfig.Username);
             }
 
             processedUsers++;
             progress.Report((double)processedUsers / usersToSync.Count * 100);
         }
 
-        _logger.LogInformation("Completed Last.fm play counts sync");
+        LogCompletedPlayCountsSync();
     }
 
     private async Task SyncUserPlayCountsAsync(
@@ -116,13 +116,12 @@ public class SyncPlayCountsTask : IScheduledTask
         PlayCountSyncStrategy strategy,
         CancellationToken cancellationToken)
     {
-        _logger.LogInformation("Syncing play counts for user {User} with strategy {Strategy}",
-            userConfig.Username, strategy);
+        LogSyncingUser(userConfig.Username, strategy);
 
         var jellyfinUser = _userManager.GetUserById(userConfig.JellyfinUserId);
         if (jellyfinUser == null)
         {
-            _logger.LogWarning("Jellyfin user {UserId} not found", userConfig.JellyfinUserId);
+            LogUserNotFound(userConfig.JellyfinUserId);
             return;
         }
 
@@ -183,17 +182,13 @@ public class SyncPlayCountsTask : IScheduledTask
 
                 if (newPlayCount != userData.PlayCount)
                 {
+                    var oldCount = userData.PlayCount;
                     userData.PlayCount = newPlayCount;
                     userData.Played = newPlayCount > 0;
                     _userDataManager.SaveUserData(jellyfinUser, match, userData, UserDataSaveReason.Import, CancellationToken.None);
                     totalUpdated++;
 
-                    _logger.LogDebug(
-                        "Updated play count for {Artist} - {Track}: {OldCount} -> {NewCount}",
-                        artistName,
-                        topTrack.Name,
-                        userData.PlayCount,
-                        newPlayCount);
+                    LogUpdatedPlayCount(artistName, topTrack.Name, oldCount, newPlayCount);
                 }
             }
 
@@ -209,7 +204,7 @@ public class SyncPlayCountsTask : IScheduledTask
             // Limit to first 5000 tracks to avoid excessive API calls
             if (totalProcessed >= 5000)
             {
-                _logger.LogInformation("Reached max tracks limit (5000), stopping pagination");
+                LogMaxTracksReached();
                 break;
             }
         }
@@ -217,11 +212,7 @@ public class SyncPlayCountsTask : IScheduledTask
         // Update sync time
         userConfig.Options.LastPlayCountSyncTime = DateTime.UtcNow;
 
-        _logger.LogInformation(
-            "Synced play counts for {User}: {Updated} updated out of {Total} processed",
-            userConfig.Username,
-            totalUpdated,
-            totalProcessed);
+        LogSyncedPlayCounts(userConfig.Username, totalUpdated, totalProcessed);
     }
 
     private static int CalculateNewPlayCount(int jellyfinCount, int lastfmCount, PlayCountSyncStrategy strategy)
@@ -234,4 +225,34 @@ public class SyncPlayCountsTask : IScheduledTask
             _ => lastfmCount
         };
     }
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "Starting Last.fm play counts sync")]
+    private partial void LogStartingPlayCountsSync();
+
+    [LoggerMessage(Level = LogLevel.Warning, Message = "Plugin not configured, skipping play counts sync")]
+    private partial void LogPluginNotConfigured();
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "No users configured for play counts import")]
+    private partial void LogNoUsersConfigured();
+
+    [LoggerMessage(Level = LogLevel.Error, Message = "Error syncing play counts for user {User}")]
+    private partial void LogSyncError(Exception ex, string user);
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "Completed Last.fm play counts sync")]
+    private partial void LogCompletedPlayCountsSync();
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "Syncing play counts for user {User} with strategy {Strategy}")]
+    private partial void LogSyncingUser(string user, PlayCountSyncStrategy strategy);
+
+    [LoggerMessage(Level = LogLevel.Warning, Message = "Jellyfin user {UserId} not found")]
+    private partial void LogUserNotFound(Guid userId);
+
+    [LoggerMessage(Level = LogLevel.Debug, Message = "Updated play count for {Artist} - {Track}: {OldCount} -> {NewCount}")]
+    private partial void LogUpdatedPlayCount(string artist, string track, int oldCount, int newCount);
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "Reached max tracks limit (5000), stopping pagination")]
+    private partial void LogMaxTracksReached();
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "Synced play counts for {User}: {Updated} updated out of {Total} processed")]
+    private partial void LogSyncedPlayCounts(string user, int updated, int total);
 }

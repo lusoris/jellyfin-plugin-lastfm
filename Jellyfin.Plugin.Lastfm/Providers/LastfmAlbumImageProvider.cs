@@ -14,8 +14,10 @@ using Services;
 /// <summary>
 /// Image provider for album images from Last.fm.
 /// </summary>
-public class LastfmAlbumImageProvider : LastfmImageProviderBase<MusicAlbum>
+public sealed partial class LastfmAlbumImageProvider : LastfmImageProviderBase<MusicAlbum>
 {
+    private readonly ILogger<LastfmAlbumImageProvider> _logger;
+
     /// <summary>
     /// Initializes a new instance of the <see cref="LastfmAlbumImageProvider"/> class.
     /// </summary>
@@ -25,6 +27,7 @@ public class LastfmAlbumImageProvider : LastfmImageProviderBase<MusicAlbum>
         ILogger<LastfmAlbumImageProvider> logger)
         : base(lastfmApiClient, httpClientFactory, logger)
     {
+        _logger = logger;
     }
 
     /// <inheritdoc />
@@ -42,13 +45,12 @@ public class LastfmAlbumImageProvider : LastfmImageProviderBase<MusicAlbum>
 
         if (string.IsNullOrEmpty(albumName) && string.IsNullOrEmpty(mbid))
         {
-            Logger.LogDebug("No album name or MBID available for album lookup");
+            LogNoAlbumInfo();
             return [];
         }
 
-        Logger.LogDebug(
-            "Fetching Last.fm images for album {AlbumName} by {ArtistName} (MBID: {Mbid})",
-            albumName,
+        LogFetchingAlbumImages(
+            albumName ?? "Unknown",
             artistName ?? "Unknown",
             mbid ?? "N/A");
 
@@ -64,8 +66,17 @@ public class LastfmAlbumImageProvider : LastfmImageProviderBase<MusicAlbum>
         }
         catch (Exception ex)
         {
-            Logger.LogError(ex, "Error fetching images for album {AlbumName}", albumName);
+            LogFetchingAlbumImagesError(ex, albumName ?? "Unknown");
             return [];
         }
     }
+
+    [LoggerMessage(Level = LogLevel.Debug, Message = "No album name or MBID available for album lookup")]
+    private partial void LogNoAlbumInfo();
+
+    [LoggerMessage(Level = LogLevel.Debug, Message = "Fetching Last.fm images for album {AlbumName} by {ArtistName} (MBID: {Mbid})")]
+    private partial void LogFetchingAlbumImages(string albumName, string artistName, string mbid);
+
+    [LoggerMessage(Level = LogLevel.Error, Message = "Error fetching images for album {AlbumName}")]
+    private partial void LogFetchingAlbumImagesError(Exception ex, string albumName);
 }

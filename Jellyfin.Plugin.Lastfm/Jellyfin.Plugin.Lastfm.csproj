@@ -7,10 +7,24 @@
     <Version>10.11.6.1</Version>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
-    <!-- Enable .NET analyzers for code quality -->
+    <!-- Strict code quality settings -->
     <EnableNETAnalyzers>true</EnableNETAnalyzers>
-    <AnalysisLevel>latest</AnalysisLevel>
+    <AnalysisLevel>latest-recommended</AnalysisLevel>
     <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <WarningLevel>9999</WarningLevel>
+    <!--
+      Suppressed warnings:
+      CA1002: Don't expose List<T> - not practical for JSON DTOs
+      CA1056: URI properties should be System.Uri - Last.fm returns strings
+      CA1711: Don't suffix with EventHandler/Queue - intentional naming
+      CA1805: Don't initialize with default value - clearer code
+      CA1819: Properties shouldn't return arrays - needed for config
+      CA1826: Use indexer instead of First() - minor perf
+      CA2227: Collection properties should be read only - JSON deserialization needs setters
+      CA5351: MD5 is broken - Required by Last.fm API, not used for security
+    -->
+    <NoWarn>CA1002;CA1056;CA1711;CA1805;CA1819;CA1826;CA2227;CA5351</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>

@@ -16,7 +16,7 @@ using Services;
 /// Base class for Last.fm image providers with shared functionality.
 /// </summary>
 /// <typeparam name="TItem">The type of item this provider supports.</typeparam>
-public abstract class LastfmImageProviderBase<TItem> : IRemoteImageProvider, IHasOrder
+public abstract partial class LastfmImageProviderBase<TItem> : IRemoteImageProvider, IHasOrder
     where TItem : BaseItem
 {
     /// <summary>
@@ -30,6 +30,7 @@ public abstract class LastfmImageProviderBase<TItem> : IRemoteImageProvider, IHa
     private static readonly string[] SizePriority = ["extralarge", "mega", "large", "medium", "small"];
 
     private readonly IHttpClientFactory _httpClientFactory;
+    private readonly ILogger _logger;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="LastfmImageProviderBase{TItem}"/> class.
@@ -41,18 +42,13 @@ public abstract class LastfmImageProviderBase<TItem> : IRemoteImageProvider, IHa
     {
         LastfmApiClient = lastfmApiClient;
         _httpClientFactory = httpClientFactory;
-        Logger = logger;
+        _logger = logger;
     }
 
     /// <summary>
     /// Gets the Last.fm API client.
     /// </summary>
     protected ILastfmApiClient LastfmApiClient { get; }
-
-    /// <summary>
-    /// Gets the logger.
-    /// </summary>
-    protected ILogger Logger { get; }
 
     /// <inheritdoc />
     public string Name => "Last.fm";
@@ -90,7 +86,7 @@ public abstract class LastfmImageProviderBase<TItem> : IRemoteImageProvider, IHa
     {
         if (images == null || images.Count == 0)
         {
-            Logger.LogDebug("No images found for {ItemName}", itemName);
+            LogNoImagesFound(itemName);
             return [];
         }
 
@@ -101,7 +97,7 @@ public abstract class LastfmImageProviderBase<TItem> : IRemoteImageProvider, IHa
 
             if (image != null && !string.IsNullOrEmpty(image.Url) && !image.Url.Contains(NoImagePlaceholder, StringComparison.Ordinal))
             {
-                Logger.LogDebug("Found {Size} image for {ItemName}: {Url}", size, itemName, image.Url);
+                LogFoundImage(size, itemName, image.Url);
 
                 // Return single-item list with capacity 1
                 return
@@ -118,4 +114,10 @@ public abstract class LastfmImageProviderBase<TItem> : IRemoteImageProvider, IHa
 
         return [];
     }
+
+    [LoggerMessage(Level = LogLevel.Debug, Message = "No images found for {ItemName}")]
+    private partial void LogNoImagesFound(string itemName);
+
+    [LoggerMessage(Level = LogLevel.Debug, Message = "Found {Size} image for {ItemName}: {Url}")]
+    private partial void LogFoundImage(string size, string itemName, string url);
 }
