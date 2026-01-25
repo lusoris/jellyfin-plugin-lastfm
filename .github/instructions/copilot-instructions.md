@@ -13,9 +13,10 @@
 - [**jellyfin-architecture.md**](jellyfin-architecture.md) - Plugin lifecycle, DI container, event system, REST endpoints
 - [**jellyfin-models.md**](jellyfin-models.md) - Audio, User, UserData types and usage patterns
 - [**jellyfin-configuration.md**](jellyfin-configuration.md) - Plugin configuration, persistence, config access
+- [**jellyfin-api.instructions.md**](jellyfin-api.instructions.md) - **Complete Jellyfin API reference** (UserData, Playback Events, Audio Entities, Provider IDs)
 
 ### **API & Integration**
-- [**lastfm-api-instructions.md**](lastfm-api-instructions.md) - Last.fm API endpoints, authentication, scrobbling rules, error handling
+- [**lastfm-api.instructions.md**](lastfm-api.instructions.md) - **Complete Last.fm API reference** (auth, scrobble, sync, error handling)
 - [**csharp-patterns.md**](csharp-patterns.md) - Async/await, LINQ, logging, null-coalescing, collections
 
 ### **Security & Development**
