@@ -3,7 +3,8 @@ name: Publish
 on:
   push:
     tags:
-      - '*'
+      - 'v*'
+      - '[0-9]+.[0-9]+.[0-9]+*'
   workflow_dispatch:
     inputs:
       tag:
@@ -45,6 +46,22 @@ jobs:
       with:
         python-version: '3.12'
 
+    - name: Install yq for YAML parsing
+      run: |
+        sudo wget -qO /usr/local/bin/yq https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64
+        sudo chmod +x /usr/local/bin/yq
+
+    - name: Read build configuration
+      id: build_config
+      run: |
+        TARGET_ABI=$(yq '.targetAbi' build.yaml)
+        PLUGIN_NAME=$(yq '.name' build.yaml)
+        PLUGIN_GUID=$(yq '.guid' build.yaml)
+        echo "target_abi=$TARGET_ABI" >> $GITHUB_OUTPUT
+        echo "plugin_name=$PLUGIN_NAME" >> $GITHUB_OUTPUT
+        echo "plugin_guid=$PLUGIN_GUID" >> $GITHUB_OUTPUT
+        echo "Using targetAbi: $TARGET_ABI"
+
     - name: Build release via dotnet build
       run: dotnet build Jellyfin.Plugin.Lastfm/Jellyfin.Plugin.Lastfm.csproj -c Release
 
@@ -59,13 +76,19 @@ jobs:
     - name: Update manifest with new version
       run: |
         CK=$(python manifest-tools/md5/md5.py -f "lastfm_${GIT_TAG_NAME}.zip")
+        echo "Checksum: $CK"
         python manifest-tools/manifest-generator/manifest.py -app "Last.fm" -f manifest.json version \
           -ver "${GIT_TAG_NAME}" \
           -cl "Jellyfin LastFM build v${GIT_TAG_NAME}" \
-          -abi "10.11.6.0" \
+          -abi "${{ steps.build_config.outputs.target_abi }}" \
           -url "https://github.com/lusoris/jellyfin-plugin-lastfm/releases/download/${GIT_TAG_NAME}/lastfm_${GIT_TAG_NAME}.zip" \
           -ck "${CK}"
-        cat manifest.json
+
+    - name: Validate manifest JSON
+      run: |
+        python -c "import json; m = json.load(open('manifest.json')); print('Manifest is valid JSON')"
+        echo "=== Updated Manifest ==="
+        cat manifest.json | python -m json.tool
 
     - name: Create GitHub release and upload binaries
       uses: svenstaro/upload-release-action@v2
@@ -75,7 +98,13 @@ jobs:
         asset_name: "lastfm_${{ steps.get_tag.outputs.tag }}.zip"
         tag: ${{ steps.get_tag.outputs.tag }}
         overwrite: true
-        body: "Jellyfin Last.fm plugin release v${{ steps.get_tag.outputs.tag }}"
+        body: |
+          ## Jellyfin Last.fm Plugin v${{ steps.get_tag.outputs.tag }}
+
+          ### Installation
+          Download the ZIP file and extract to your Jellyfin plugins directory.
+
+          **Target ABI:** ${{ steps.build_config.outputs.target_abi }}
 
     - name: Upload updated manifest as artifact
       uses: actions/upload-artifact@v4
