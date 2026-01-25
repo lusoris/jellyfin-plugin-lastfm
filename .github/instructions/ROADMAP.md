@@ -625,3 +625,102 @@ While you can't add custom home sections, you can:
 6. **Homepage integration**: Cannot add custom home sections; use plugin pages in menu instead
 
 7. **Cross-reference guide**: See `api-cross-reference.instructions.md` for complete API mapping
+
+8. **UI Framework**: Plain HTML + vanilla JS (or bundled modern JS)
+   - Jellyfin loads plugin pages as embedded HTML, NOT as React components
+   - React is used internally by jellyfin-web, but plugins don't have access
+   - Option: Build custom JS bundle with Vite and embed as `<script>` tag
+   - Keep it simple for now: Modern vanilla JS with Jellyfin's `ApiClient`
+
+---
+
+## Development Approach
+
+### Step-by-Step Implementation Order
+
+```
+Phase 1: Foundation (MUST DO FIRST)
+├── 1.1 Project Setup
+│   ├── Add GPL-2.0 LICENSE
+│   ├── Clean project structure
+│   └── Remove old code references
+├── 1.2 API Client
+│   ├── ILastfmApiClient interface
+│   ├── HttpClient setup with DI
+│   ├── Signature generation
+│   └── Rate limiting
+└── 1.3 Configuration
+    ├── PluginConfiguration (global)
+    ├── Per-user settings storage
+    └── Basic config page
+
+Phase 2: Core Scrobbling (Essential Feature)
+├── 2.1 Event Handlers
+│   ├── PlaybackStart → Now Playing
+│   └── PlaybackStopped → Scrobble
+├── 2.2 Scrobble Logic
+│   ├── Duration validation (>30s, >50%)
+│   ├── Duplicate detection
+│   └── Offline queue (JSON)
+└── 2.3 Authentication
+    └── auth.getMobileSession flow
+
+Phase 3: Bidirectional Favorites (High Value)
+├── 3.1 JF → Last.fm
+│   └── IsFavorite change → track.love/unlove
+├── 3.2 Last.fm → JF
+│   ├── user.getLovedTracks import
+│   └── Scheduled task
+└── 3.3 Conflict Resolution
+    └── Configurable strategies
+
+Phase 4: Play Count & History Import
+├── 4.1 Play Count Sync
+│   ├── user.getTopTracks fetch
+│   ├── Match in library
+│   └── Update UserItemData.PlayCount
+└── 4.2 Last Played Date
+    └── user.getRecentTracks → LastPlayedDate
+
+Phase 5: Smart Playlists
+├── 5.1 Playlist Service
+│   ├── IPlaylistManager integration
+│   └── Auto-update existing playlists
+├── 5.2 Strategies (one at a time)
+│   ├── Similar Artists
+│   ├── Similar Tracks
+│   ├── Rediscover Favorites
+│   ├── Weekly Mixtape
+│   └── Tag Discovery
+└── 5.3 Configuration
+    └── Per-strategy settings
+
+Phase 6: Custom UI Pages
+├── 6.1 Basic Pages
+│   ├── Recommendations page
+│   └── Statistics page
+├── 6.2 API Endpoints
+│   └── LastfmController with REST API
+└── 6.3 Page Content
+    ├── HTML structure
+    ├── JS interactivity
+    └── Jellyfin style integration
+
+Phase 7: Polish & Testing
+├── 7.1 Error Handling
+├── 7.2 Logging
+├── 7.3 Documentation
+└── 7.4 Testing (optional)
+```
+
+### MVP Definition
+
+**Minimum Viable Product (Phases 1-3):**
+- ✅ Scrobbling works
+- ✅ Now Playing works
+- ✅ Favorites sync bidirectionally
+- ✅ Basic configuration page
+- ⏳ No playlists yet
+- ⏳ No custom pages yet
+
+This gets us a **working replacement** for the old plugin quickly, then we can add features incrementally.
