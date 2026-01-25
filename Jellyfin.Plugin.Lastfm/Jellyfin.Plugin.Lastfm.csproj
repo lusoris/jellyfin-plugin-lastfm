@@ -15,6 +15,8 @@
 
   <ItemGroup>
     <EmbeddedResource Include="Configuration\configPage.html" />
+    <EmbeddedResource Include="Pages\recommendations.html" />
+    <EmbeddedResource Include="Pages\statistics.html" />
   </ItemGroup>
 
   <ItemGroup>

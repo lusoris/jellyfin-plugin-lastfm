@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Last.fm Statistics</title>
+    <style>
+        .lastfm-page { padding: 1em 2em; }
+        .lastfm-header { margin-bottom: 2em; }
+        .lastfm-header h1 { margin: 0; display: flex; align-items: center; gap: 0.5em; }
+        .lastfm-header .icon { font-size: 1.5em; }
+        .lastfm-user-select { margin-bottom: 2em; max-width: 400px; }
+        .lastfm-stats-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 1em; margin-bottom: 2em; }
+        .lastfm-stat-card {
+            background: rgba(255,255,255,0.05);
+            border-radius: 8px;
+            padding: 1.5em;
+            text-align: center;
+        }
+        .lastfm-stat-card .value { font-size: 2em; font-weight: bold; color: var(--theme-primary-color, #52b54b); }
+        .lastfm-stat-card .label { opacity: 0.7; margin-top: 0.5em; }
+        .lastfm-section { margin-bottom: 2em; }
+        .lastfm-section h2 { margin-bottom: 1em; display: flex; align-items: center; gap: 0.5em; }
+        .lastfm-queue-info { 
+            background: rgba(255,255,255,0.05); 
+            border-radius: 8px; 
+            padding: 1.5em;
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            gap: 1em;
+        }
+        .lastfm-queue-item { text-align: center; }
+        .lastfm-queue-item .value { font-size: 1.5em; font-weight: bold; }
+        .lastfm-queue-item .label { font-size: 0.85em; opacity: 0.7; }
+        .lastfm-status-indicator { 
+            display: inline-flex; 
+            align-items: center; 
+            gap: 0.5em;
+            padding: 0.5em 1em;
+            border-radius: 20px;
+            font-weight: 500;
+        }
+        .lastfm-status-indicator.connected { background: rgba(82,181,75,0.2); color: #52b54b; }
+        .lastfm-status-indicator.disconnected { background: rgba(244,67,54,0.2); color: #f44336; }
+        .lastfm-options-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 0.75em; }
+        .lastfm-option { 
+            display: flex; 
+            align-items: center; 
+            gap: 0.5em;
+            padding: 0.5em 0.75em;
+            background: rgba(255,255,255,0.03);
+            border-radius: 4px;
+        }
+        .lastfm-option .status { width: 8px; height: 8px; border-radius: 50%; }
+        .lastfm-option .status.on { background: #52b54b; }
+        .lastfm-option .status.off { background: #666; }
+        .lastfm-loading { text-align: center; padding: 2em; opacity: 0.7; }
+    </style>
+</head>
+<body>
+    <div id="LastfmStatsPage" data-role="page" class="page type-interior"
+         data-require="emby-select">
+
+        <div data-role="content">
+            <div class="content-primary lastfm-page">
+                <div class="lastfm-header">
+                    <h1>
+                        <span class="icon material-icons">insert_chart</span>
+                        Last.fm Statistics
+                    </h1>
+                    <p>View your Last.fm connection status and scrobbling statistics</p>
+                </div>
+
+                <div class="lastfm-user-select">
+                    <div class="selectContainer">
+                        <select is="emby-select" id="selectUser" label="Select User:"></select>
+                    </div>
+                </div>
+
+                <!-- Connection Status -->
+                <div class="lastfm-section">
+                    <h2>
+                        <span class="material-icons">link</span>
+                        Connection Status
+                    </h2>
+                    <div id="connectionStatus">
+                        <div class="lastfm-loading">Loading...</div>
+                    </div>
+                </div>
+
+                <!-- Enabled Features -->
+                <div class="lastfm-section" id="featuresSection" style="display: none;">
+                    <h2>
+                        <span class="material-icons">settings</span>
+                        Enabled Features
+                    </h2>
+                    <div id="featuresGrid" class="lastfm-options-grid"></div>
+                </div>
+
+                <!-- Scrobble Queue -->
+                <div class="lastfm-section">
+                    <h2>
+                        <span class="material-icons">queue_music</span>
+                        Scrobble Queue
+                    </h2>
+                    <div id="queueInfo" class="lastfm-queue-info">
+                        <div class="lastfm-loading">Loading...</div>
+                    </div>
+                </div>
+
+                <!-- Quick Actions -->
+                <div class="lastfm-section">
+                    <h2>
+                        <span class="material-icons">flash_on</span>
+                        Quick Actions
+                    </h2>
+                    <div style="display: flex; gap: 1em; flex-wrap: wrap;">
+                        <button is="emby-button" type="button" class="raised" onclick="openConfig()">
+                            <span class="material-icons" style="margin-right: 0.5em;">settings</span>
+                            <span>Configure</span>
+                        </button>
+                        <button is="emby-button" type="button" class="raised" onclick="openRecommendations()">
+                            <span class="material-icons" style="margin-right: 0.5em;">auto_awesome</span>
+                            <span>Recommendations</span>
+                        </button>
+                        <button is="emby-button" type="button" class="raised" onclick="refreshStats()">
+                            <span class="material-icons" style="margin-right: 0.5em;">refresh</span>
+                            <span>Refresh</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <script type="text/javascript">
+            let currentUserId = null;
+
+            document.addEventListener('viewshow', function() {
+                loadUsers();
+            });
+
+            async function loadUsers() {
+                try {
+                    const users = await ApiClient.getUsers();
+                    const select = document.getElementById('selectUser');
+                    select.innerHTML = users.map(u => `<option value="${u.Id}">${u.Name}</option>`).join('');
+                    
+                    if (users.length > 0) {
+                        currentUserId = users[0].Id;
+                        select.addEventListener('change', (e) => {
+                            currentUserId = e.target.value;
+                            loadStats();
+                        });
+                        loadStats();
+                    }
+                } catch (error) {
+                    console.error('Failed to load users:', error);
+                }
+            }
+
+            async function loadStats() {
+                await Promise.all([
+                    loadConnectionStatus(),
+                    loadQueueInfo()
+                ]);
+            }
+
+            async function refreshStats() {
+                Dashboard.showLoadingMsg();
+                await loadStats();
+                Dashboard.hideLoadingMsg();
+            }
+
+            async function loadConnectionStatus() {
+                const container = document.getElementById('connectionStatus');
+                const featuresSection = document.getElementById('featuresSection');
+                const featuresGrid = document.getElementById('featuresGrid');
+                
+                try {
+                    const response = await ApiClient.fetch({
+                        url: ApiClient.getUrl('Lastfm/Status/' + currentUserId),
+                        type: 'GET'
+                    });
+
+                    if (response.IsConnected) {
+                        container.innerHTML = `
+                            <div class="lastfm-status-indicator connected">
+                                <span class="material-icons">check_circle</span>
+                                Connected as <strong>${response.Username}</strong>
+                            </div>
+                        `;
+                        
+                        // Show features
+                        featuresSection.style.display = 'block';
+                        featuresGrid.innerHTML = `
+                            <div class="lastfm-option">
+                                <span class="status ${response.ScrobbleEnabled ? 'on' : 'off'}"></span>
+                                <span>Scrobbling</span>
+                            </div>
+                            <div class="lastfm-option">
+                                <span class="status ${response.NowPlayingEnabled ? 'on' : 'off'}"></span>
+                                <span>Now Playing</span>
+                            </div>
+                            <div class="lastfm-option">
+                                <span class="status ${response.SyncFavoritesToLoved ? 'on' : 'off'}"></span>
+                                <span>Sync Favorites</span>
+                            </div>
+                            <div class="lastfm-option">
+                                <span class="status ${response.ImportLovedTracks ? 'on' : 'off'}"></span>
+                                <span>Import Loved</span>
+                            </div>
+                            <div class="lastfm-option">
+                                <span class="status ${response.ImportPlayCounts ? 'on' : 'off'}"></span>
+                                <span>Import Plays</span>
+                            </div>
+                        `;
+                    } else {
+                        container.innerHTML = `
+                            <div class="lastfm-status-indicator disconnected">
+                                <span class="material-icons">link_off</span>
+                                Not connected to Last.fm
+                            </div>
+                            <p style="margin-top: 1em; opacity: 0.7;">
+                                <a href="configurationpage?name=Lastfm">Click here to connect your Last.fm account</a>
+                            </p>
+                        `;
+                        featuresSection.style.display = 'none';
+                    }
+                } catch (error) {
+                    container.innerHTML = `
+                        <div class="lastfm-status-indicator disconnected">
+                            <span class="material-icons">error</span>
+                            Unable to load status
+                        </div>
+                    `;
+                    featuresSection.style.display = 'none';
+                }
+            }
+
+            async function loadQueueInfo() {
+                const container = document.getElementById('queueInfo');
+                
+                try {
+                    const response = await ApiClient.fetch({
+                        url: ApiClient.getUrl('Lastfm/Queue/' + currentUserId),
+                        type: 'GET'
+                    });
+
+                    const formatDate = (timestamp) => {
+                        if (!timestamp) return 'N/A';
+                        return new Date(timestamp * 1000).toLocaleString();
+                    };
+
+                    container.innerHTML = `
+                        <div class="lastfm-queue-item">
+                            <div class="value">${response.PendingCount}</div>
+                            <div class="label">Your Pending</div>
+                        </div>
+                        <div class="lastfm-queue-item">
+                            <div class="value">${response.TotalPendingCount}</div>
+                            <div class="label">Total Pending</div>
+                        </div>
+                        <div class="lastfm-queue-item">
+                            <div class="value" style="font-size: 1em;">${formatDate(response.OldestScrobble)}</div>
+                            <div class="label">Oldest</div>
+                        </div>
+                        <div class="lastfm-queue-item">
+                            <div class="value" style="font-size: 1em;">${formatDate(response.NewestScrobble)}</div>
+                            <div class="label">Newest</div>
+                        </div>
+                    `;
+                } catch (error) {
+                    container.innerHTML = `
+                        <div style="text-align: center; opacity: 0.7;">
+                            Unable to load queue information
+                        </div>
+                    `;
+                }
+            }
+
+            function openConfig() {
+                Dashboard.navigate('configurationpage?name=Lastfm');
+            }
+
+            function openRecommendations() {
+                Dashboard.navigate('configurationpage?name=LastfmRecommendations');
+            }
+        </script>
+    </div>
+</body>
+</html>

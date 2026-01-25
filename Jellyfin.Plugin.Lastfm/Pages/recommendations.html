@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Last.fm Recommendations</title>
+    <style>
+        .lastfm-page { padding: 1em 2em; }
+        .lastfm-header { margin-bottom: 2em; }
+        .lastfm-header h1 { margin: 0; display: flex; align-items: center; gap: 0.5em; }
+        .lastfm-header .icon { font-size: 1.5em; }
+        .lastfm-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 1.5em; }
+        .lastfm-card { 
+            background: rgba(255,255,255,0.05); 
+            border-radius: 8px; 
+            padding: 1.5em;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .lastfm-card:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.3); }
+        .lastfm-card h3 { margin: 0 0 0.5em 0; color: var(--theme-primary-color, #52b54b); }
+        .lastfm-card p { margin: 0 0 1em 0; opacity: 0.8; font-size: 0.9em; }
+        .lastfm-card button { width: 100%; }
+        .lastfm-result { margin-top: 1em; padding: 0.75em; border-radius: 4px; display: none; }
+        .lastfm-result.success { background: rgba(82,181,75,0.2); color: #52b54b; display: block; }
+        .lastfm-result.error { background: rgba(244,67,54,0.2); color: #f44336; display: block; }
+        .lastfm-input { margin-bottom: 1em; }
+        .lastfm-loading { text-align: center; padding: 2em; opacity: 0.7; }
+        .lastfm-user-select { margin-bottom: 2em; max-width: 400px; }
+    </style>
+</head>
+<body>
+    <div id="LastfmRecommendationsPage" data-role="page" class="page type-interior"
+         data-require="emby-input,emby-button,emby-select">
+
+        <div data-role="content">
+            <div class="content-primary lastfm-page">
+                <div class="lastfm-header">
+                    <h1>
+                        <span class="icon material-icons">auto_awesome</span>
+                        Last.fm Recommendations
+                    </h1>
+                    <p>Create smart playlists based on your Last.fm listening history</p>
+                </div>
+
+                <div class="lastfm-user-select">
+                    <div class="selectContainer">
+                        <select is="emby-select" id="selectUser" label="Select User:"></select>
+                    </div>
+                    <div id="userStatus" style="margin-top: 0.5em; opacity: 0.7;"></div>
+                </div>
+
+                <div class="lastfm-cards">
+                    <!-- Similar Artists Playlist -->
+                    <div class="lastfm-card">
+                        <h3>🎸 Similar Artists Mix</h3>
+                        <p>Discover new music from artists similar to your favorites. Based on your top artists from the last 3 months.</p>
+                        <div class="lastfm-input">
+                            <input is="emby-input" type="text" id="similarArtistsName" label="Playlist Name:" value="Similar Artists Mix" />
+                        </div>
+                        <div class="lastfm-input">
+                            <input is="emby-input" type="number" id="similarArtistsCount" label="Max Tracks:" value="50" min="10" max="200" />
+                        </div>
+                        <button is="emby-button" type="button" class="raised button-submit" onclick="createSimilarArtistsPlaylist()">
+                            <span>Create Playlist</span>
+                        </button>
+                        <div id="similarArtistsResult" class="lastfm-result"></div>
+                    </div>
+
+                    <!-- Similar Tracks Playlist -->
+                    <div class="lastfm-card">
+                        <h3>💿 Similar Tracks Mix</h3>
+                        <p>Find tracks similar to your loved songs. Perfect for discovering new favorites in your library.</p>
+                        <div class="lastfm-input">
+                            <input is="emby-input" type="text" id="similarTracksName" label="Playlist Name:" value="Similar Tracks Mix" />
+                        </div>
+                        <div class="lastfm-input">
+                            <input is="emby-input" type="number" id="similarTracksCount" label="Max Tracks:" value="50" min="10" max="200" />
+                        </div>
+                        <button is="emby-button" type="button" class="raised button-submit" onclick="createSimilarTracksPlaylist()">
+                            <span>Create Playlist</span>
+                        </button>
+                        <div id="similarTracksResult" class="lastfm-result"></div>
+                    </div>
+
+                    <!-- Rediscover Favorites -->
+                    <div class="lastfm-card">
+                        <h3>💎 Rediscover Favorites</h3>
+                        <p>Revisit songs you loved but haven't listened to in a while. Bring back forgotten gems!</p>
+                        <div class="lastfm-input">
+                            <input is="emby-input" type="text" id="rediscoverName" label="Playlist Name:" value="Rediscover Favorites" />
+                        </div>
+                        <div class="lastfm-input">
+                            <input is="emby-input" type="number" id="rediscoverCount" label="Max Tracks:" value="50" min="10" max="200" />
+                        </div>
+                        <button is="emby-button" type="button" class="raised button-submit" onclick="createRediscoverPlaylist()">
+                            <span>Create Playlist</span>
+                        </button>
+                        <div id="rediscoverResult" class="lastfm-result"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <script type="text/javascript">
+            let currentUserId = null;
+
+            document.addEventListener('viewshow', function() {
+                loadUsers();
+            });
+
+            async function loadUsers() {
+                try {
+                    const users = await ApiClient.getUsers();
+                    const select = document.getElementById('selectUser');
+                    select.innerHTML = users.map(u => `<option value="${u.Id}">${u.Name}</option>`).join('');
+                    
+                    if (users.length > 0) {
+                        currentUserId = users[0].Id;
+                        select.addEventListener('change', (e) => {
+                            currentUserId = e.target.value;
+                            checkUserStatus();
+                        });
+                        checkUserStatus();
+                    }
+                } catch (error) {
+                    console.error('Failed to load users:', error);
+                }
+            }
+
+            async function checkUserStatus() {
+                const statusEl = document.getElementById('userStatus');
+                try {
+                    const response = await ApiClient.fetch({
+                        url: ApiClient.getUrl('Lastfm/Status/' + currentUserId),
+                        type: 'GET'
+                    });
+                    
+                    if (response.IsConnected) {
+                        statusEl.innerHTML = `✓ Connected as <strong>${response.Username}</strong>`;
+                        statusEl.style.color = '#52b54b';
+                    } else {
+                        statusEl.innerHTML = '✗ Not connected to Last.fm. <a href="configurationpage?name=Lastfm">Configure</a>';
+                        statusEl.style.color = '#f44336';
+                    }
+                } catch (error) {
+                    statusEl.innerHTML = '✗ Unable to check status';
+                    statusEl.style.color = '#f44336';
+                }
+            }
+
+            async function createSimilarArtistsPlaylist() {
+                const name = document.getElementById('similarArtistsName').value;
+                const maxTracks = parseInt(document.getElementById('similarArtistsCount').value);
+                await createPlaylist('SimilarArtists', name, maxTracks, 'similarArtistsResult');
+            }
+
+            async function createSimilarTracksPlaylist() {
+                const name = document.getElementById('similarTracksName').value;
+                const maxTracks = parseInt(document.getElementById('similarTracksCount').value);
+                await createPlaylist('SimilarTracks', name, maxTracks, 'similarTracksResult');
+            }
+
+            async function createRediscoverPlaylist() {
+                const name = document.getElementById('rediscoverName').value;
+                const maxTracks = parseInt(document.getElementById('rediscoverCount').value);
+                await createPlaylist('RediscoverFavorites', name, maxTracks, 'rediscoverResult');
+            }
+
+            async function createPlaylist(type, playlistName, maxTracks, resultElementId) {
+                const resultEl = document.getElementById(resultElementId);
+                resultEl.className = 'lastfm-result';
+                resultEl.style.display = 'none';
+
+                Dashboard.showLoadingMsg();
+                
+                try {
+                    const response = await ApiClient.fetch({
+                        url: ApiClient.getUrl('Lastfm/Playlists/' + type),
+                        type: 'POST',
+                        contentType: 'application/json',
+                        data: JSON.stringify({
+                            UserId: currentUserId,
+                            PlaylistName: playlistName,
+                            MaxTracks: maxTracks
+                        })
+                    });
+
+                    if (response.Success) {
+                        resultEl.className = 'lastfm-result success';
+                        resultEl.textContent = `✓ Created "${response.PlaylistName}" with ${response.TracksAdded} tracks!`;
+                    } else {
+                        resultEl.className = 'lastfm-result error';
+                        resultEl.textContent = `✗ ${response.Error || 'Failed to create playlist'}`;
+                    }
+                } catch (error) {
+                    resultEl.className = 'lastfm-result error';
+                    resultEl.textContent = `✗ ${error.message || 'Failed to create playlist'}`;
+                } finally {
+                    Dashboard.hideLoadingMsg();
+                }
+            }
+        </script>
+    </div>
+</body>
+</html>

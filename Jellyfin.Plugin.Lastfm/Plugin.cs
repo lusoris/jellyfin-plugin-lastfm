@@ -49,13 +49,33 @@ public class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages
     /// <inheritdoc />
     public IEnumerable<PluginPageInfo> GetPages()
     {
-        return
-        [
-            new PluginPageInfo
-            {
-                Name = "lastfm",
-                EmbeddedResourcePath = $"{GetType().Namespace}.Configuration.configPage.html"
-            }
-        ];
+        // Configuration page
+        yield return new PluginPageInfo
+        {
+            Name = "Lastfm",
+            EmbeddedResourcePath = $"{GetType().Namespace}.Configuration.configPage.html"
+        };
+
+        // Recommendations page (appears in menu)
+        yield return new PluginPageInfo
+        {
+            Name = "LastfmRecommendations",
+            DisplayName = "Last.fm Recommendations",
+            EmbeddedResourcePath = $"{GetType().Namespace}.Pages.recommendations.html",
+            EnableInMainMenu = true,
+            MenuSection = "music",
+            MenuIcon = "auto_awesome"
+        };
+
+        // Statistics page (appears in menu)
+        yield return new PluginPageInfo
+        {
+            Name = "LastfmStats",
+            DisplayName = "Last.fm Statistics",
+            EmbeddedResourcePath = $"{GetType().Namespace}.Pages.statistics.html",
+            EnableInMainMenu = true,
+            MenuSection = "music",
+            MenuIcon = "insert_chart"
+        };
     }
 }
