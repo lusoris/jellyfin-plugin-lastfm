@@ -458,5 +458,5 @@ git push origin feature/my-feature
 ---
 
 **Related**:
-- [snyk_rules.instructions.md](snyk_rules.instructions.md) - Security scanning
-- [csharp-security.md](csharp-security.md) - Security patterns
+- [../snyk_rules.instructions.md](../snyk_rules.instructions.md) - Security scanning
+- [../csharp/csharp-security.md](../csharp/csharp-security.md) - Security patterns

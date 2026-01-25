@@ -17,8 +17,8 @@
 | **[ide-setup.instructions.md](ide-setup.instructions.md)** | → [ide/package-managers.md](ide/package-managers.md) (apt, brew, dnf, pacman, winget, choco...) |
 | | → [ide/shell-config.md](ide/shell-config.md) (bash, zsh, fish, PowerShell, nushell) |
 | | → [ide/ide-vscode.md](ide/ide-vscode.md), [ide-zed.md](ide/ide-zed.md), [ide-rider.md](ide/ide-rider.md), [ide-neovim.md](ide/ide-neovim.md) |
-| [development-workflow.md](development-workflow.md) | Build, versioning, CI/CD |
-| [testing.instructions.md](testing.instructions.md) | xUnit, Moq, coverage |
+| [workflow/development-workflow.md](workflow/development-workflow.md) | Build, versioning, CI/CD |
+| [workflow/testing.instructions.md](workflow/testing.instructions.md) | xUnit, Moq, coverage |
 
 ### 📡 API References
 | Index | Modules |
@@ -41,8 +41,8 @@
 ### ✅ Code Quality
 | File | Description |
 |------|-------------|
-| [csharp-patterns.md](csharp-patterns.md) | Performance, async, LoggerMessage |
-| [csharp-security.md](csharp-security.md) | Security, strict mode, validation |
+| [csharp/csharp-patterns.md](csharp/csharp-patterns.md) | Performance, async, LoggerMessage |
+| [csharp/csharp-security.md](csharp/csharp-security.md) | Security, strict mode, validation |
 | [snyk_rules.instructions.md](snyk_rules.instructions.md) | Security scanning |
 
 ---
@@ -125,11 +125,11 @@ Jellyfin.Plugin.Lastfm/
 
 ## ⚠️ Before Changing Code
 
-1. **Read** [csharp-patterns.md](csharp-patterns.md) for performance patterns
-2. **Read** [csharp-security.md](csharp-security.md) for security requirements
+1. **Read** [csharp/csharp-patterns.md](csharp/csharp-patterns.md) for performance patterns
+2. **Read** [csharp/csharp-security.md](csharp/csharp-security.md) for security requirements
 3. **Verify** build passes with 0 warnings (`TreatWarningsAsErrors=true`)
 4. **Run** Snyk scan if adding new dependencies
 
 ## ⚠️ Before Updating Jellyfin Target
 
-Check [development-workflow.md](development-workflow.md#jellyfin-update-checklist) for the full checklist.
+Check [development-workflow.md](workflow/development-workflow.md#jellyfin-update-checklist) for the full checklist.

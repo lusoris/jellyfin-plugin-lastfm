@@ -391,5 +391,5 @@ Before committing code, verify:
 
 **Related**:
 - [csharp-patterns.md](csharp-patterns.md) - General patterns
-- [lastfm-api.instructions.md](lastfm-api.instructions.md) - API authentication
-- [development-workflow.md](development-workflow.md) - Build process
+- [../lastfm-api.instructions.md](../lastfm-api.instructions.md) - API authentication
+- [../workflow/development-workflow.md](../workflow/development-workflow.md) - Build process

@@ -42,4 +42,4 @@ dotnet test
 
 ---
 
-**Related:** [development-workflow.md](development-workflow.md) | [testing.instructions.md](testing.instructions.md)
+**Related:** [workflow/development-workflow.md](workflow/development-workflow.md) | [workflow/testing.instructions.md](workflow/testing.instructions.md)

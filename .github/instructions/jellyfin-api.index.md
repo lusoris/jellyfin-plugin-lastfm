@@ -60,4 +60,4 @@ var userData = _userDataManager.GetUserData(user, item);
 
 ---
 
-**Related:** [csharp-patterns.md](csharp-patterns.md) | [testing.instructions.md](testing.instructions.md)
+**Related:** [csharp/csharp-patterns.md](csharp/csharp-patterns.md) | [workflow/testing.instructions.md](workflow/testing.instructions.md)
