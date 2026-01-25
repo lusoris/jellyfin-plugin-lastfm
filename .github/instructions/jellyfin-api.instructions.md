@@ -18,6 +18,11 @@ This document provides a comprehensive reference for Jellyfin APIs relevant to t
 8. [Configuration System](#configuration-system)
 9. [Dependency Injection](#dependency-injection)
 10. [Sync Feature Matrix](#sync-feature-matrix)
+11. [Playlist Management](#playlist-management)
+12. [Collection Management](#collection-management)
+13. [Custom Plugin Pages](#custom-plugin-pages)
+14. [Music Discovery APIs](#music-discovery-apis)
+15. [Custom API Endpoints](#custom-api-endpoints)
 
 ---
 
@@ -935,6 +940,388 @@ public async Task SyncLovedTrackFromLastFm(User user, Audio track, bool isLoved)
 
 ---
 
+## Playlist Management
+
+### IPlaylistManager
+
+Interface for creating and managing playlists.
+
+**Namespace:** `MediaBrowser.Controller.Playlists`
+
+```csharp
+public interface IPlaylistManager
+{
+    /// <summary>
+    /// Creates a new playlist.
+    /// </summary>
+    Task<PlaylistCreationResult> CreatePlaylist(PlaylistCreationRequest request);
+    
+    /// <summary>
+    /// Adds items to an existing playlist.
+    /// </summary>
+    Task AddItemToPlaylistAsync(Guid playlistId, IReadOnlyCollection<Guid> itemIds, Guid userId);
+    
+    /// <summary>
+    /// Removes items from a playlist.
+    /// </summary>
+    Task RemoveItemFromPlaylistAsync(string playlistId, IEnumerable<string> entryIds);
+    
+    /// <summary>
+    /// Moves an item within the playlist.
+    /// </summary>
+    Task MoveItemAsync(string playlistId, string entryId, int newIndex);
+    
+    /// <summary>
+    /// Gets the playlists for a user.
+    /// </summary>
+    IReadOnlyList<Playlist> GetPlaylists(Guid userId);
+}
+```
+
+### PlaylistCreationRequest
+
+**Namespace:** `MediaBrowser.Model.Playlists`
+
+```csharp
+public class PlaylistCreationRequest
+{
+    public string Name { get; set; }
+    public IReadOnlyList<Guid> ItemIdList { get; set; }
+    public Guid UserId { get; set; }
+    public MediaType? MediaType { get; set; }  // Use MediaType.Audio for music
+    public PlaylistUserPermissions[] Users { get; set; }
+    public bool IsPublic { get; set; }
+}
+```
+
+### PlaylistCreationResult
+
+**Namespace:** `MediaBrowser.Model.Playlists`
+
+```csharp
+public class PlaylistCreationResult
+{
+    public Guid Id { get; set; }
+    public string Name { get; set; }
+}
+```
+
+### Playlist Entity
+
+**Namespace:** `MediaBrowser.Controller.Playlists`
+
+```csharp
+public class Playlist : Folder
+{
+    public string PlaylistMediaType { get; set; }
+    public IReadOnlyList<LinkedChild> LinkedChildren { get; }
+    
+    public override IReadOnlyList<BaseItem> GetChildren(User user, bool includeLinkedChildren);
+}
+```
+
+### Example: Creating a Playlist from Last.fm Recommendations
+
+```csharp
+public async Task<Guid> CreateRecommendationPlaylist(
+    User user,
+    string playlistName,
+    IEnumerable<Audio> tracks)
+{
+    var trackIds = tracks.Select(t => t.Id).ToList();
+    
+    var request = new PlaylistCreationRequest
+    {
+        Name = playlistName,
+        ItemIdList = trackIds,
+        UserId = user.Id,
+        MediaType = MediaType.Audio,
+        IsPublic = false
+    };
+    
+    var result = await _playlistManager.CreatePlaylist(request);
+    return result.Id;
+}
+```
+
+---
+
+## Collection Management
+
+### ICollectionManager
+
+Interface for creating and managing collections (BoxSets).
+
+**Namespace:** `MediaBrowser.Controller.Collections`
+
+```csharp
+public interface ICollectionManager
+{
+    /// <summary>
+    /// Creates a new collection (BoxSet).
+    /// </summary>
+    Task<BoxSet> CreateCollectionAsync(CollectionCreationOptions options);
+    
+    /// <summary>
+    /// Adds items to an existing collection.
+    /// </summary>
+    Task AddToCollectionAsync(Guid collectionId, IEnumerable<Guid> itemIds);
+    
+    /// <summary>
+    /// Removes items from a collection.
+    /// </summary>
+    Task RemoveFromCollectionAsync(Guid collectionId, IEnumerable<Guid> itemIds);
+    
+    /// <summary>
+    /// Gets the collections folder.
+    /// </summary>
+    Task<Folder?> GetCollectionsFolder(bool createIfNeeded);
+    
+    /// <summary>
+    /// Events for collection changes.
+    /// </summary>
+    event EventHandler<CollectionCreatedEventArgs>? CollectionCreated;
+    event EventHandler<CollectionModifiedEventArgs>? ItemsAddedToCollection;
+    event EventHandler<CollectionModifiedEventArgs>? ItemsRemovedFromCollection;
+}
+```
+
+### CollectionCreationOptions
+
+**Namespace:** `MediaBrowser.Controller.Collections`
+
+```csharp
+public class CollectionCreationOptions
+{
+    public string Name { get; set; }
+    public Guid? ParentId { get; set; }
+    public bool IsLocked { get; set; }
+    public Dictionary<string, string> ProviderIds { get; set; }
+    public IReadOnlyList<string> ItemIdList { get; set; }
+    public IReadOnlyList<Guid> UserIds { get; set; }
+}
+```
+
+### BoxSet Entity
+
+**Namespace:** `MediaBrowser.Controller.Entities.Movies`
+
+```csharp
+public class BoxSet : Folder, IHasTrailers, IHasDisplayOrder
+{
+    public IReadOnlyList<LinkedChild> LinkedChildren { get; }
+    public bool ContainsLinkedChildByItemId(Guid itemId);
+}
+```
+
+### Example: Creating a Collection from Last.fm Library
+
+```csharp
+public async Task<BoxSet> CreateLastfmCollection(
+    User user,
+    string collectionName,
+    IEnumerable<Guid> albumIds)
+{
+    var options = new CollectionCreationOptions
+    {
+        Name = collectionName,
+        ItemIdList = albumIds.Select(id => id.ToString()).ToList(),
+        UserIds = new[] { user.Id },
+        IsLocked = false
+    };
+    
+    return await _collectionManager.CreateCollectionAsync(options);
+}
+```
+
+---
+
+## Custom Plugin Pages
+
+### IHasWebPages Interface
+
+Allows plugins to add custom web pages to Jellyfin's UI.
+
+**Namespace:** `MediaBrowser.Model.Plugins`
+
+```csharp
+public interface IHasWebPages
+{
+    IEnumerable<PluginPageInfo> GetPages();
+}
+```
+
+### PluginPageInfo
+
+**Namespace:** `MediaBrowser.Model.Plugins`
+
+```csharp
+public class PluginPageInfo
+{
+    /// <summary>
+    /// Unique identifier for the page (used in URL).
+    /// </summary>
+    public string Name { get; set; }
+    
+    /// <summary>
+    /// Display name shown in UI.
+    /// </summary>
+    public string? DisplayName { get; set; }
+    
+    /// <summary>
+    /// Path to the embedded HTML resource.
+    /// </summary>
+    public string EmbeddedResourcePath { get; set; }
+    
+    /// <summary>
+    /// Whether to show this page in the main menu.
+    /// </summary>
+    public bool EnableInMainMenu { get; set; }
+    
+    /// <summary>
+    /// Menu section (e.g., "Music", "Movies").
+    /// Used when EnableInMainMenu is true.
+    /// </summary>
+    public string? MenuSection { get; set; }
+    
+    /// <summary>
+    /// Icon for the menu item.
+    /// </summary>
+    public string? MenuIcon { get; set; }
+}
+```
+
+### Example: Plugin with Custom Pages
+
+```csharp
+public class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages
+{
+    public IEnumerable<PluginPageInfo> GetPages()
+    {
+        // Configuration page (standard)
+        yield return new PluginPageInfo
+        {
+            Name = Name,
+            EmbeddedResourcePath = GetType().Namespace + ".Configuration.configPage.html"
+        };
+        
+        // Last.fm Recommendations page (appears in main menu under Music)
+        yield return new PluginPageInfo
+        {
+            Name = "LastfmRecommendations",
+            DisplayName = "Last.fm Recommendations",
+            EmbeddedResourcePath = GetType().Namespace + ".Pages.recommendations.html",
+            EnableInMainMenu = true,
+            MenuSection = "music",
+            MenuIcon = "star"
+        };
+        
+        // Last.fm Statistics page
+        yield return new PluginPageInfo
+        {
+            Name = "LastfmStats",
+            DisplayName = "Last.fm Statistics",
+            EmbeddedResourcePath = GetType().Namespace + ".Pages.statistics.html",
+            EnableInMainMenu = true,
+            MenuSection = "music",
+            MenuIcon = "insert_chart"
+        };
+    }
+}
+```
+
+### Accessing Pages
+
+Plugin pages are accessible at:
+```
+/web/configurationpage?name=PageName
+```
+
+---
+
+## Music Discovery APIs
+
+### IMusicManager
+
+Interface for music-related discovery features.
+
+**Namespace:** `MediaBrowser.Controller.Library`
+
+```csharp
+public interface IMusicManager
+{
+    /// <summary>
+    /// Gets an instant mix from a song, similar tracks.
+    /// </summary>
+    IReadOnlyList<BaseItem> GetInstantMixFromItem(BaseItem item, User? user, DtoOptions dtoOptions);
+    
+    /// <summary>
+    /// Gets an instant mix from an artist.
+    /// </summary>
+    IReadOnlyList<BaseItem> GetInstantMixFromArtist(MusicArtist artist, User? user, DtoOptions dtoOptions);
+    
+    /// <summary>
+    /// Gets an instant mix from genres.
+    /// </summary>
+    IReadOnlyList<BaseItem> GetInstantMixFromGenres(IEnumerable<string> genres, User? user, DtoOptions dtoOptions);
+}
+```
+
+### Suggestions API
+
+**Note:** The Jellyfin suggestions system is internal and not directly extensible by plugins. However, you can:
+1. Create custom API endpoints that return recommendations
+2. Create custom web pages that display recommendations
+3. Use playlists to store and display recommended content
+
+---
+
+## Custom API Endpoints
+
+### Creating Plugin API Controllers
+
+Plugins can add custom REST API endpoints.
+
+```csharp
+[ApiController]
+[Authorize]
+[Route("Lastfm")]
+[Produces(MediaTypeNames.Application.Json)]
+public class LastfmController : ControllerBase
+{
+    private readonly ILibraryManager _libraryManager;
+    private readonly IPlaylistManager _playlistManager;
+    
+    [HttpGet("Recommendations/{userId}")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    public async Task<ActionResult<IEnumerable<BaseItemDto>>> GetRecommendations(
+        [FromRoute] Guid userId,
+        [FromQuery] int limit = 50)
+    {
+        // Return recommendations from Last.fm
+    }
+    
+    [HttpPost("Playlists/CreateFromRecommendations")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    public async Task<ActionResult<PlaylistCreationResult>> CreateRecommendationPlaylist(
+        [FromQuery] Guid userId,
+        [FromQuery] string playlistName,
+        [FromQuery] string strategy = "similar")
+    {
+        // Create playlist from Last.fm recommendations
+    }
+    
+    [HttpGet("Stats/{userId}")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    public async Task<ActionResult<LastfmStatsDto>> GetUserStats([FromRoute] Guid userId)
+    {
+        // Return user's Last.fm stats
+    }
+}
+```
+
+---
+
 ## Important Notes
 
 ### Time Units
@@ -958,3 +1345,13 @@ For Last.fm compliance, scrobble when:
 ### Disposal
 - Always unsubscribe from events in `Dispose()`
 - Implement `IAsyncDisposable` for async cleanup
+
+### Playlists vs Collections
+| Feature | Playlist | Collection (BoxSet) |
+|---------|----------|---------------------|
+| Primary use | Ordered song lists | Movie/Show groupings |
+| Ordering | Yes, user-defined | Display order only |
+| Media types | Any single type | Primarily video |
+| Visibility | Per-user or public | Library-wide |
+| Storage | Database + file | Folder on disk |
+| Best for Last.fm | Recommendations | Not recommended |
