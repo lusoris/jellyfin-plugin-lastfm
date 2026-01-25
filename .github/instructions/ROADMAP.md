@@ -506,6 +506,110 @@ public enum PlaylistType { SimilarArtists, SimilarTracks, RediscoverFavorites, W
 
 ---
 
+## Homepage & UI Integration Ideas
+
+### Custom Pages Under Music Section
+
+Using `IHasWebPages` with `EnableInMainMenu = true` and `MenuSection = "music"`:
+
+```csharp
+yield return new PluginPageInfo
+{
+    Name = "LastfmForYou",
+    DisplayName = "Last.fm For You",
+    EmbeddedResourcePath = GetType().Namespace + ".Pages.foryou.html",
+    EnableInMainMenu = true,
+    MenuSection = "music",
+    MenuIcon = "stars"
+};
+```
+
+### Page Ideas
+
+#### 1. "Last.fm For You" Page
+Main recommendation hub showing:
+- **Discover Artists** - Similar to your favorites (in your library)
+- **Discover Tracks** - Similar to recently played
+- **Quick Actions** - Generate playlist buttons
+- Powered by `artist.getSimilar`, `track.getSimilar`
+
+#### 2. "Listening Stats" Page
+Visual statistics dashboard:
+- Total scrobbles (lifetime, week, month)
+- Top 5 artists with play counts
+- Top 5 tracks with play counts
+- Listening history timeline
+- "You've listened to X hours this week"
+- Powered by `user.getInfo`, `user.getTopArtists`, `user.getTopTracks`
+
+#### 3. "Rediscover" Page
+Surface old favorites:
+- "Haven't heard in a while" section
+- "Your most scrobbled, least played locally"
+- "From your early Last.fm days"
+- Powered by `user.getLovedTracks` + local `UserItemData.LastPlayedDate`
+
+#### 4. "Weekly Report" Page
+Auto-generated weekly summary:
+- "Your week in music" stats
+- Top artist/track of the week
+- Discovery rate (new artists played)
+- Powered by `user.getWeeklyArtistChart`, `user.getWeeklyTrackChart`
+
+### API Endpoints for Pages
+
+```csharp
+[ApiController]
+[Route("Lastfm")]
+public class LastfmController : ControllerBase
+{
+    // For "For You" page
+    [HttpGet("Recommendations/{userId}")]
+    Task<LastfmRecommendationsDto> GetRecommendations(Guid userId)
+    
+    // For "Stats" page
+    [HttpGet("Stats/{userId}")]
+    Task<LastfmStatsDto> GetUserStats(Guid userId)
+    
+    // For "Stats" page - period-based
+    [HttpGet("Stats/{userId}/Period/{period}")]
+    Task<LastfmPeriodStatsDto> GetPeriodStats(Guid userId, string period)
+    
+    // For "Rediscover" page
+    [HttpGet("Rediscover/{userId}")]
+    Task<IEnumerable<Audio>> GetRediscoverTracks(Guid userId, int limit = 50)
+    
+    // For "Weekly Report" page
+    [HttpGet("WeeklyReport/{userId}")]
+    Task<WeeklyReportDto> GetWeeklyReport(Guid userId)
+    
+    // Action: Generate playlist
+    [HttpPost("Playlists/Generate")]
+    Task<PlaylistCreationResult> GeneratePlaylist(Guid userId, string strategy)
+}
+```
+
+### Why Plugin Pages (Not Homepage Sections)
+
+Jellyfin's `HomeSectionType` is an internal enum - plugins cannot add new section types. However:
+
+1. **Plugin pages with `EnableInMainMenu = true`** appear in the navigation menu
+2. **`MenuSection = "music"`** places them under the Music library section
+3. **Full HTML/JS control** allows rich interactive UIs
+4. **Custom API endpoints** provide all needed data
+
+This is the recommended approach and matches how official Jellyfin plugins work.
+
+### Alternative: Influence Home Sections Indirectly
+
+While you can't add custom home sections, you can:
+
+1. **"Continue Listening"** (ResumeAudio) - Create/update playlists that show here
+2. **"Latest Media"** - If you add tracks to library, they appear here
+3. **Play history** - Scrobble imports update `LastPlayedDate`, affecting suggestions
+
+---
+
 ## Resolved Questions
 
 1. **Playcount sync direction**: Last.fm → Jellyfin with configurable strategy (add/replace/max)
@@ -517,3 +621,7 @@ public enum PlaylistType { SimilarArtists, SimilarTracks, RediscoverFavorites, W
 4. **Playlists vs Collections**: Use Playlists (better for music, ordered lists, per-user)
 
 5. **Custom UI**: Plugin pages under Music section using `IHasWebPages` with `EnableInMainMenu = true`
+
+6. **Homepage integration**: Cannot add custom home sections; use plugin pages in menu instead
+
+7. **Cross-reference guide**: See `api-cross-reference.instructions.md` for complete API mapping
