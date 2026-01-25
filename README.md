@@ -23,6 +23,8 @@ Scrobble your Jellyfin music playback to [Last.fm](https://www.last.fm/), sync l
 - **Similar Artists Mix** - Discover music from artists similar to your favorites
 - **Similar Tracks Mix** - Find tracks similar to your loved songs
 - **Rediscover Favorites** - Revisit loved tracks you haven't played recently
+- **Weekly Mixtape** - Mix of recent favorites + similar discoveries
+- **Tag Discovery** - Find tracks matching your favorite genres/tags
 
 ### Custom UI Pages
 - **Recommendations Page** - Create smart playlists with one click
@@ -108,6 +110,8 @@ The plugin adds these scheduled tasks (Dashboard → Scheduled Tasks):
 | `/Lastfm/Playlists/SimilarArtists` | POST | Create similar artists playlist |
 | `/Lastfm/Playlists/SimilarTracks` | POST | Create similar tracks playlist |
 | `/Lastfm/Playlists/RediscoverFavorites` | POST | Create rediscover favorites playlist |
+| `/Lastfm/Playlists/WeeklyMixtape` | POST | Create weekly mixtape playlist |
+| `/Lastfm/Playlists/TagDiscovery` | POST | Create tag discovery playlist |
 
 ## 🏗️ Building from Source
 
@@ -147,4 +151,4 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 
 - [Jellyfin](https://jellyfin.org/)
 - [Last.fm API Documentation](https://www.last.fm/api)
-- [Plugin Roadmap](.github/instructions/ROADMAP.md)
+- [Implementation Status](.github/instructions/STATUS.md)

@@ -83,32 +83,4 @@ public class LovedTrackArtist
     public string? MusicBrainzId { get; set; }
 }
 
-/// <summary>
-/// Pagination attributes for paginated responses.
-/// </summary>
-public class PaginationAttributes
-{
-    /// <summary>
-    /// Gets or sets the current page number.
-    /// </summary>
-    [JsonPropertyName("page")]
-    public int Page { get; set; }
-
-    /// <summary>
-    /// Gets or sets the total number of pages.
-    /// </summary>
-    [JsonPropertyName("totalPages")]
-    public int TotalPages { get; set; }
-
-    /// <summary>
-    /// Gets or sets the total number of items.
-    /// </summary>
-    [JsonPropertyName("total")]
-    public int Total { get; set; }
-
-    /// <summary>
-    /// Gets a value indicating whether this is the last page.
-    /// </summary>
-    [JsonIgnore]
-    public bool IsLastPage => Page >= TotalPages;
-}
+// PaginationAttributes is defined in CommonTypes.cs

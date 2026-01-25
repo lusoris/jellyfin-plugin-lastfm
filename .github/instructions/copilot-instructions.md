@@ -31,11 +31,11 @@
 | [csharp-patterns.md](csharp-patterns.md) | Async/await, LINQ, logging |
 | [csharp-security.md](csharp-security.md) | Password handling, HTTP, API keys |
 
-### Development & Planning
+### Development & Status
 | File | Description |
 |------|-------------|
+| **[STATUS.md](STATUS.md)** | **Implementation status (all features complete)** |
 | [development-workflow.md](development-workflow.md) | Building, versioning, CI/CD |
-| [ROADMAP.md](ROADMAP.md) | Clean-room rewrite roadmap |
 | [snyk_rules.instructions.md](snyk_rules.instructions.md) | Security scanning |
 
 ---
@@ -100,6 +100,7 @@ Jellyfin.Plugin.Lastfm/
 
 | Need to... | See... |
 |------------|--------|
+| **Check implementation status** | **[STATUS.md](STATUS.md)** |
 | Understand plugin lifecycle | [jellyfin-architecture.md](jellyfin-architecture.md) |
 | Access User/Audio models | [jellyfin-models.md](jellyfin-models.md) |
 | Modify configuration | [jellyfin-configuration.md](jellyfin-configuration.md) |
@@ -108,7 +109,6 @@ Jellyfin.Plugin.Lastfm/
 | Use async/await, LINQ | [csharp-patterns.md](csharp-patterns.md) |
 | Handle passwords, HTTP | [csharp-security.md](csharp-security.md) |
 | Build release, CI/CD | [development-workflow.md](development-workflow.md) |
-| Plan new features | [ROADMAP.md](ROADMAP.md) |
 
 ---
 
