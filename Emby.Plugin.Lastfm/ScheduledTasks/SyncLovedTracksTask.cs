@@ -184,7 +184,7 @@ public sealed class SyncLovedTracksTask : IScheduledTask
                     userData.IsFavorite = true;
                     // Note: In Emby, user data changes are persisted automatically through the UserItemData object
                     // No explicit SaveUserData call needed
-                    
+
                     _logger.Info("Marked as favorite: {0} - {1} for user {2}", artistName, trackName, embyUser.Name);
                     totalFavorited++;
                 }

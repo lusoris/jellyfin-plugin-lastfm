@@ -38,6 +38,7 @@ public class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages
 ```
 
 **Responsibilities**:
+
 - Plugin metadata (ID, name, version)
 - Configuration management
 - Web UI pages
@@ -47,6 +48,7 @@ public class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages
 **Access**: `Plugin.Instance` for global configuration access
 
 **⚠️ Key Differences from Jellyfin**:
+
 - Constructor parameters different (`IApplicationPaths` vs Jellyfin's paths)
 - Must manually set `Instance` property
 - No `IServerApplicationHost` injection here
@@ -108,15 +110,18 @@ public class ServerEntryPoint : IServerEntryPoint
 ```
 
 **Responsibilities**:
+
 - Wire up event listeners
 - Manage background operations
 - Handle graceful shutdown
 
-**Lifecycle**: 
+**Lifecycle**:
+
 - `RunAsync()` called when Emby starts
 - `Dispose()` called on shutdown
 
 **⚠️ Key Differences from Jellyfin**:
+
 - Uses `IServerEntryPoint` (not `IHostedService`)
 - `RunAsync()` instead of `StartAsync()`/`StopAsync()`
 - No `CancellationToken` parameters
@@ -159,7 +164,8 @@ public ServerEntryPoint(
 }
 ```
 
-**⚠️ Critical Difference: HTTP Client**
+### ⚠️ Critical Difference: HTTP Client
+
 ```csharp
 // ❌ Jellyfin pattern (doesn't work in Emby):
 _httpClient = httpClientFactory.CreateClient();
@@ -191,6 +197,7 @@ private async void OnPlaybackStart(object sender, PlaybackProgressEventArgs e)
 **Use**: Send "now playing" to Last.fm
 
 **⚠️ Differences from Jellyfin**:
+
 - Type checking: `e.Item.GetType().Name != "Audio"` (not `is Audio`)
 - .NET Framework 4.8 limitations (no pattern matching)
 
@@ -218,6 +225,7 @@ private async void OnPlaybackStopped(object sender, PlaybackStopEventArgs e)
 **Use**: Check scrobbling conditions, submit to Last.fm
 
 **Scrobble Logic** (same as Jellyfin):
+
 ```csharp
 private bool IsScrobbleEligible(long durationTicks, long playedTicks)
 {
@@ -251,6 +259,7 @@ private async void OnUserDataSaved(object sender, UserDataSaveEventArgs e)
 
 **Triggers**: When user changes ratings/favorites
 **SaveReasons**:
+
 - `UserDataSaveReason.UpdateUserRating` - Favorite toggle
 - `UserDataSaveReason.PlaybackFinished` - Alternative scrobble trigger
 
@@ -335,6 +344,7 @@ public class SyncLovedTracksTask : IScheduledTask
 **Registration**: Emby auto-discovers `IScheduledTask` implementations
 
 **⚠️ Differences from Jellyfin**:
+
 - No explicit registration needed
 - `TaskTriggerInfo` structure slightly different
 - `ILogManager` for logging (not `ILogger<T>`)
@@ -442,6 +452,7 @@ public class LastfmApiClient
 ```
 
 **⚠️ Key Points**:
+
 - `IHttpClient` (not `HttpClient` from `System.Net.Http`)
 - `HttpRequestOptions` configuration object
 - Manual stream reading
@@ -481,6 +492,7 @@ public class ServerEntryPoint : IServerEntryPoint
 ```
 
 **⚠️ Differences from Jellyfin**:
+
 - `ILogManager.GetLogger()` (not `ILoggerFactory.CreateLogger<T>()`)
 - `_logger.Info()` (not `_logger.LogInformation()`)
 - `_logger.ErrorException()` (not `_logger.LogError()`)
@@ -531,6 +543,7 @@ Plugin.Instance.SaveConfiguration();
 ---
 
 **Related:**
+
 - [emby-api.md](emby-api.md) - API reference & endpoints
 - [emby-patterns.md](emby-patterns.md) - .NET Framework 4.8 patterns
 - [../jellyfin-architecture.md](../jellyfin-architecture.md) - Compare with Jellyfin

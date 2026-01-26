@@ -24,19 +24,22 @@ Jellyfin migrated to EFCore internally, but **plugins are unaffected**. Use Jell
 ## Quick Reference
 
 ### Scrobble Flow
-```
+
+```text
 PlaybackStopped → Check eligibility → Build Scrobble → API call
-```
+```text
 
 ### Favorite Sync
-```
+
+```text
 UserDataSaved (IsFavorite) → track.love / track.unlove
-```
+```text
 
 ### Import Flow
-```
+
+```text
 user.getLovedTracks → Match in library → Update UserItemData
-```
+```text
 
 ## Common Patterns
 
@@ -56,7 +59,7 @@ var tracks = _libraryManager.GetItemList(query).OfType<Audio>();
 
 // Get/update user data
 var userData = _userDataManager.GetUserData(user, item);
-```
+```text
 
 ---
 

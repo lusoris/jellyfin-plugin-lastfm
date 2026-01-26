@@ -8,21 +8,21 @@ This document provides a comprehensive reference for Jellyfin APIs relevant to t
 
 ## Table of Contents
 
-1. [Core Interfaces](#core-interfaces)
-2. [User Data System](#user-data-system)
-3. [Playback Events](#playback-events)
-4. [Audio Entities](#audio-entities)
-5. [Provider IDs & MusicBrainz](#provider-ids--musicbrainz)
-6. [Library Manager](#library-manager)
-7. [User Management](#user-management)
-8. [Configuration System](#configuration-system)
-9. [Dependency Injection](#dependency-injection)
-10. [Sync Feature Matrix](#sync-feature-matrix)
-11. [Playlist Management](#playlist-management)
-12. [Collection Management](#collection-management)
-13. [Custom Plugin Pages](#custom-plugin-pages)
-14. [Music Discovery APIs](#music-discovery-apis)
-15. [Custom API Endpoints](#custom-api-endpoints)
+1. Core Interfaces
+2. User Data System
+3. Playback Events
+4. Audio Entities
+5. Provider IDs & MusicBrainz
+6. Library Manager
+7. User Management
+8. Configuration System
+9. Dependency Injection
+10. Sync Feature Matrix
+11. Playlist Management
+12. Collection Management
+13. Custom Plugin Pages
+14. Music Discovery APIs
+15. Custom API Endpoints
 
 ---
 
@@ -52,7 +52,7 @@ public interface ISessionManager
     Task OnPlaybackProgress(PlaybackProgressInfo info, bool isAutomated);
     Task OnPlaybackStopped(PlaybackStopInfo info);
 }
-```
+```text
 
 ### IUserDataManager
 
@@ -77,7 +77,7 @@ public interface IUserDataManager
     
     bool UpdatePlayState(BaseItem item, UserItemData data, long? reportedPositionTicks);
 }
-```
+```text
 
 ### ILibraryManager
 
@@ -98,7 +98,7 @@ public interface ILibraryManager
     MusicArtist GetArtist(string name, DtoOptions options);
     MusicGenre GetMusicGenre(string name);
 }
-```
+```text
 
 ### IUserManager
 
@@ -117,7 +117,7 @@ public interface IUserManager
     User? GetUserById(Guid id);
     User? GetUserByName(string name);
 }
-```
+```text
 
 ---
 
@@ -182,7 +182,7 @@ public class UserItemData
     /// </summary>
     public int? SubtitleStreamIndex { get; set; }
 }
-```
+```text
 
 ### UserItemDataDto
 
@@ -205,7 +205,7 @@ public class UserItemDataDto
     public required string Key { get; set; }
     public Guid ItemId { get; set; }
 }
-```
+```text
 
 ### UpdateUserItemDataDto
 
@@ -228,7 +228,7 @@ public class UpdateUserItemDataDto
     public string? Key { get; set; }
     public Guid? ItemId { get; set; }
 }
-```
+```text
 
 ### UserDataSaveReason
 
@@ -247,7 +247,7 @@ public enum UserDataSaveReason
     Import = 6,
     UpdateUserData = 7
 }
-```
+```text
 
 ---
 
@@ -275,7 +275,7 @@ public class PlaybackProgressEventArgs : EventArgs
     public string PlaySessionId { get; set; }
     public SessionInfo Session { get; set; }
 }
-```
+```text
 
 ### PlaybackStartEventArgs
 
@@ -288,7 +288,7 @@ public class PlaybackStartEventArgs : PlaybackProgressEventArgs
 {
     // Inherits all properties from PlaybackProgressEventArgs
 }
-```
+```text
 
 ### PlaybackStopEventArgs
 
@@ -304,7 +304,7 @@ public class PlaybackStopEventArgs : PlaybackProgressEventArgs
     /// </summary>
     public bool PlayedToCompletion { get; set; }
 }
-```
+```text
 
 ### PlaybackProgressInfo
 
@@ -337,7 +337,7 @@ public class PlaybackProgressInfo
     public QueueItem[] NowPlayingQueue { get; set; }
     public string PlaylistItemId { get; set; }
 }
-```
+```text
 
 ### PlaybackStopInfo
 
@@ -359,7 +359,7 @@ public class PlaybackStopInfo
     public string NextMediaType { get; set; }
     public string PlaylistItemId { get; set; }
 }
-```
+```text
 
 ---
 
@@ -394,7 +394,7 @@ public class Audio : BaseItem, IHasAlbumArtist, IHasArtist, IHasMusicGenres
     // Provider IDs
     public Dictionary<string, string> ProviderIds { get; }
 }
-```
+```text
 
 ### MusicAlbum
 
@@ -422,7 +422,7 @@ public class MusicAlbum : Folder, IHasAlbumArtist, IHasArtist, IHasMusicGenres
     // Provider IDs (MusicBrainz, AudioDB, etc.)
     public Dictionary<string, string> ProviderIds { get; }
 }
-```
+```text
 
 ### MusicArtist
 
@@ -441,7 +441,7 @@ public class MusicArtist : Folder, IItemByName, IHasMusicGenres
     // Provider IDs
     public Dictionary<string, string> ProviderIds { get; }
 }
-```
+```text
 
 ### BaseItem Common Properties
 
@@ -473,7 +473,7 @@ public abstract class BaseItem : IHasProviderIds
     // User data key generation
     public virtual List<string> GetUserDataKeys();
 }
-```
+```text
 
 ---
 
@@ -500,7 +500,7 @@ public enum MetadataProvider
     MusicBrainzTrack = 18,       // Track MBID
     MusicBrainzRecording = 19    // Recording MBID (unique to recording)
 }
-```
+```text
 
 ### IHasProviderIds Interface
 
@@ -524,7 +524,7 @@ public static class ProviderIdsExtensions
     public static void SetProviderId(this IHasProviderIds instance, string name, string? value);
     public static bool TrySetProviderId(this IHasProviderIds instance, MetadataProvider provider, string? value);
 }
-```
+```text
 
 ### MusicBrainz ID Mapping
 
@@ -554,7 +554,7 @@ Jellyfin generates user data keys for lookup.
 // For MusicArtist:
 // 1. "Artist-Musicbrainz-{MusicBrainzArtist}"
 // 2. "Artist-{Name}" (normalized, diacritics removed)
-```
+```text
 
 ---
 
@@ -600,7 +600,7 @@ public class InternalItemsQuery
     
     public bool EnableTotalRecordCount { get; set; }
 }
-```
+```text
 
 ### BaseItemKind Enum (Audio-related)
 
@@ -618,7 +618,7 @@ public enum BaseItemKind
     Playlist,        // Playlist
     // ... other item types
 }
-```
+```text
 
 ### ItemSortBy Enum (Audio-related)
 
@@ -639,7 +639,7 @@ public enum ItemSortBy
     Runtime,
     // ... other sort options
 }
-```
+```text
 
 ---
 
@@ -666,7 +666,7 @@ public class User
     public bool IsAdministrator { get; set; }
     public bool IsDisabled { get; set; }
 }
-```
+```text
 
 ---
 
@@ -682,7 +682,7 @@ public class BasePluginConfiguration
     // Base class for plugin settings
     // Serialized to XML in plugin config directory
 }
-```
+```text
 
 ### Server Configuration
 
@@ -705,7 +705,7 @@ public class ServerConfiguration
     // Minutes remaining to auto-complete (audiobooks)
     public int MaxAudiobookResume { get; set; }     // Default: 5
 }
-```
+```text
 
 ---
 
@@ -731,7 +731,7 @@ public class PluginServiceRegistrator : IPluginServiceRegistrator
         serviceCollection.AddHostedService<MyBackgroundService>();
     }
 }
-```
+```text
 
 ### Available Services via DI
 
@@ -745,7 +745,7 @@ ILogger<T>               // Logging
 IServerConfigurationManager  // Server configuration
 IApplicationPaths        // File system paths
 IHttpClientFactory       // HTTP requests
-```
+```text
 
 ---
 
@@ -781,7 +781,7 @@ IHttpClientFactory       // HTTP requests
 // 1. MusicBrainz Release Group ID
 // 2. MusicBrainz Release ID
 // 3. Artist + Album Name (fuzzy match)
-```
+```text
 
 ---
 
@@ -863,7 +863,7 @@ public class LastfmScrobbler : IServerEntryPoint
         _userDataManager.UserDataSaved -= OnUserDataSaved;
     }
 }
-```
+```text
 
 ---
 
@@ -897,7 +897,7 @@ public async Task<IEnumerable<Audio>> GetTracksByMusicBrainzId(string mbid)
         .OfType<Audio>()
         .Where(a => a.GetProviderId(MetadataProvider.MusicBrainzRecording) == mbid);
 }
-```
+```text
 
 ---
 
@@ -936,7 +936,7 @@ public async Task SyncLovedTrackFromLastFm(User user, Audio track, bool isLoved)
         _userDataManager.SaveUserData(user, track, updateDto, UserDataSaveReason.Import);
     }
 }
-```
+```text
 
 ---
 
@@ -976,7 +976,7 @@ public interface IPlaylistManager
     /// </summary>
     IReadOnlyList<Playlist> GetPlaylists(Guid userId);
 }
-```
+```text
 
 ### PlaylistCreationRequest
 
@@ -992,7 +992,7 @@ public class PlaylistCreationRequest
     public PlaylistUserPermissions[] Users { get; set; }
     public bool IsPublic { get; set; }
 }
-```
+```text
 
 ### PlaylistCreationResult
 
@@ -1004,7 +1004,7 @@ public class PlaylistCreationResult
     public Guid Id { get; set; }
     public string Name { get; set; }
 }
-```
+```text
 
 ### Playlist Entity
 
@@ -1018,7 +1018,7 @@ public class Playlist : Folder
     
     public override IReadOnlyList<BaseItem> GetChildren(User user, bool includeLinkedChildren);
 }
-```
+```text
 
 ### Example: Creating a Playlist from Last.fm Recommendations
 
@@ -1042,7 +1042,7 @@ public async Task<Guid> CreateRecommendationPlaylist(
     var result = await _playlistManager.CreatePlaylist(request);
     return result.Id;
 }
-```
+```text
 
 ---
 
@@ -1084,7 +1084,7 @@ public interface ICollectionManager
     event EventHandler<CollectionModifiedEventArgs>? ItemsAddedToCollection;
     event EventHandler<CollectionModifiedEventArgs>? ItemsRemovedFromCollection;
 }
-```
+```text
 
 ### CollectionCreationOptions
 
@@ -1100,7 +1100,7 @@ public class CollectionCreationOptions
     public IReadOnlyList<string> ItemIdList { get; set; }
     public IReadOnlyList<Guid> UserIds { get; set; }
 }
-```
+```text
 
 ### BoxSet Entity
 
@@ -1112,7 +1112,7 @@ public class BoxSet : Folder, IHasTrailers, IHasDisplayOrder
     public IReadOnlyList<LinkedChild> LinkedChildren { get; }
     public bool ContainsLinkedChildByItemId(Guid itemId);
 }
-```
+```text
 
 ### Example: Creating a Collection from Last.fm Library
 
@@ -1132,7 +1132,7 @@ public async Task<BoxSet> CreateLastfmCollection(
     
     return await _collectionManager.CreateCollectionAsync(options);
 }
-```
+```text
 
 ---
 
@@ -1149,7 +1149,7 @@ public interface IHasWebPages
 {
     IEnumerable<PluginPageInfo> GetPages();
 }
-```
+```text
 
 ### PluginPageInfo
 
@@ -1189,7 +1189,7 @@ public class PluginPageInfo
     /// </summary>
     public string? MenuIcon { get; set; }
 }
-```
+```text
 
 ### Example: Plugin with Custom Pages
 
@@ -1228,14 +1228,15 @@ public class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages
         };
     }
 }
-```
+```text
 
 ### Accessing Pages
 
 Plugin pages are accessible at:
-```
+
+```text
 /web/configurationpage?name=PageName
-```
+```text
 
 ---
 
@@ -1265,11 +1266,12 @@ public interface IMusicManager
     /// </summary>
     IReadOnlyList<BaseItem> GetInstantMixFromGenres(IEnumerable<string> genres, User? user, DtoOptions dtoOptions);
 }
-```
+```text
 
 ### Suggestions API
 
 **Note:** The Jellyfin suggestions system is internal and not directly extensible by plugins. However, you can:
+
 1. Create custom API endpoints that return recommendations
 2. Create custom web pages that display recommendations
 3. Use playlists to store and display recommended content
@@ -1318,35 +1320,42 @@ public class LastfmController : ControllerBase
         // Return user's Last.fm stats
     }
 }
-```
+```text
 
 ---
 
 ## Important Notes
 
 ### Time Units
+
 - **Ticks:** 1 tick = 100 nanoseconds = 0.0001 milliseconds
 - **Conversion:** `TimeSpan.FromTicks(ticks)` or `ticks / TimeSpan.TicksPerSecond`
 
 ### Scrobble Threshold
+
 Jellyfin considers an item "played to completion" based on:
+
 - `MinResumePct` (default 5%): Ignore progress below this
 - `MaxResumePct` (default 90%): Auto-complete above this
 
 For Last.fm compliance, scrobble when:
+
 - Track duration > 30 seconds AND
 - Playback position > 50% OR > 4 minutes
 
 ### Thread Safety
+
 - Session events can fire from multiple threads
 - Use `ConcurrentDictionary` for caches
 - Be careful with async void event handlers
 
 ### Disposal
+
 - Always unsubscribe from events in `Dispose()`
 - Implement `IAsyncDisposable` for async cleanup
 
 ### Playlists vs Collections
+
 | Feature | Playlist | Collection (BoxSet) |
 |---------|----------|---------------------|
 | Primary use | Ordered song lists | Movie/Show groupings |

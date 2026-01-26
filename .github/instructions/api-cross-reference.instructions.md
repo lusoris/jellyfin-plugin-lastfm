@@ -15,12 +15,14 @@ Jellyfin 10.11 migrated from SQLite to Entity Framework Core (EFCore). **This do
 3. **API stability** - The Jellyfin plugin APIs remain stable across this internal change
 
 **What this means for us:**
+
 - ✅ `ILibraryManager.GetItemList()` works identically
 - ✅ `IUserDataManager.GetUserData()` works identically  
 - ✅ Provider IDs, metadata, user data all work unchanged
 - ✅ No code changes required for EFCore migration
 
 **Never do this in a plugin:**
+
 ```csharp
 // ❌ WRONG - Never access EFCore directly
 using Microsoft.EntityFrameworkCore;
@@ -29,7 +31,7 @@ var dbContext = serviceProvider.GetService<JellyfinDbContext>();
 // ✅ CORRECT - Use Jellyfin service interfaces
 _libraryManager.GetItemList(query);
 _userDataManager.GetUserData(user, item);
-```
+```text
 
 ---
 
@@ -63,7 +65,8 @@ _userDataManager.GetUserData(user, item);
 | `Audio.ProviderIds["MusicBrainzRecording"]` | `track.scrobble.mbid` | Better matching |
 
 **Implementation Flow:**
-```
+
+```text
 PlaybackStopped event
   → Check if Audio type
   → Check scrobble threshold (>50% or >4min)
@@ -71,7 +74,7 @@ PlaybackStopped event
   → Extract track metadata
   → Call track.scrobble API
   → Handle response/errors
-```
+```text
 
 ### 2. Now Playing (Jellyfin → Last.fm)
 
@@ -87,10 +90,12 @@ PlaybackStopped event
 ### 3. Love/Unlove Sync (Bidirectional)
 
 **Jellyfin → Last.fm:**
+
 - Trigger: `IUserDataManager.UserDataSaved` with `IsFavorite` change
 - API: `track.love` or `track.unlove`
 
 **Last.fm → Jellyfin:**
+
 - Trigger: Scheduled task or manual sync
 - API: `user.getLovedTracks`
 - Target: `UserItemData.IsFavorite`
@@ -108,19 +113,21 @@ PlaybackStopped event
 ### Play Count Import (Last.fm → Jellyfin)
 
 **API Chain:**
-```
+
+```text
 user.getTopTracks(period=overall) 
   → foreach track
     → Match in Jellyfin library
     → Compare UserItemData.PlayCount
     → Update if configured (add/replace/max strategy)
-```
+```text
 
 | Last.fm Field | Jellyfin Target | Strategy Options |
 |---------------|-----------------|------------------|
 | `toptracks.track[].playcount` | `UserItemData.PlayCount` | Add, Replace, Max |
 
 **Matching Priority:**
+
 1. MusicBrainz Recording ID (exact)
 2. Artist + Track name (fuzzy, normalized)
 3. Artist + Album + Track (fuzzy, for disambiguation)
@@ -128,12 +135,13 @@ user.getTopTracks(period=overall)
 ### Last Played Date Import (Last.fm → Jellyfin)
 
 **API Chain:**
-```
+
+```text
 user.getRecentTracks(extended=1)
   → foreach track with date
     → Match in Jellyfin library
     → Update UserItemData.LastPlayedDate
-```
+```text
 
 | Last.fm Field | Jellyfin Target |
 |---------------|-----------------|
@@ -146,7 +154,8 @@ user.getRecentTracks(extended=1)
 ### Strategy 1: Similar Artists Playlist
 
 **API Flow:**
-```
+
+```text
 user.getTopArtists(limit=10) OR user.getLovedTracks → extract artists
   → foreach artist
     → artist.getSimilar(limit=5)
@@ -155,7 +164,7 @@ user.getTopArtists(limit=10) OR user.getLovedTracks → extract artists
       → Add to playlist candidates
   → Filter duplicates, limit results
   → IPlaylistManager.CreatePlaylist()
-```
+```text
 
 | Step | API | Data Flow |
 |------|-----|-----------|
@@ -167,31 +176,34 @@ user.getTopArtists(limit=10) OR user.getLovedTracks → extract artists
 ### Strategy 2: Similar Tracks Playlist
 
 **API Flow:**
-```
+
+```text
 user.getRecentTracks(limit=20) OR user.getLovedTracks
   → foreach track
     → track.getSimilar(limit=10)
     → Match similar tracks in local library
   → Deduplicate, sort by match score
   → IPlaylistManager.CreatePlaylist()
-```
+```text
 
 ### Strategy 3: Rediscover Favorites
 
 **API Flow:**
-```
+
+```text
 user.getLovedTracks(limit=200)
   → Match all in Jellyfin library
   → IUserDataManager.GetUserData() for each
   → Filter by LastPlayedDate > 30 days ago
   → Sort by age (oldest first)
   → IPlaylistManager.CreatePlaylist()
-```
+```text
 
 ### Strategy 4: Weekly Mixtape
 
 **API Flow:**
-```
+
+```text
 user.getWeeklyTrackChart()
   → Match in library
   → user.getTopArtists(period=7day)
@@ -199,19 +211,20 @@ user.getWeeklyTrackChart()
     → Find tracks in library
   → Combine: 50% weekly chart + 50% recommendations
   → IPlaylistManager.CreatePlaylist()
-```
+```text
 
 ### Strategy 5: Tag/Genre Discovery
 
 **API Flow:**
-```
+
+```text
 user.getTopTags(limit=10)
   → foreach tag
     → tag.getTopTracks(limit=20)
     → Match in Jellyfin library (by artist+track or MBID)
   → Filter to unplayed or rarely played
   → IPlaylistManager.CreatePlaylist()
-```
+```text
 
 ---
 
@@ -256,7 +269,7 @@ public class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages
         };
     }
 }
-```
+```text
 
 **Page URL:** `/web/configurationpage?name=LastfmRecommendations`
 
@@ -333,7 +346,7 @@ public class LastfmController : ControllerBase
         return await _playlistManager.CreatePlaylist(request);
     }
 }
-```
+```text
 
 ### Option 3: HomeSection Integration (Advanced)
 
@@ -344,6 +357,7 @@ Jellyfin's home screen uses `HomeSectionType` enum. While plugins can't add new 
 3. **Leverage the Suggestions API** - add tracks to user's play history to influence suggestions
 
 **HomeSectionType values (for reference):**
+
 ```csharp
 public enum HomeSectionType
 {
@@ -357,29 +371,37 @@ public enum HomeSectionType
     NextUp = 7,                // Next Episode
     LiveTv = 8                 // Live TV Now
 }
-```
+```text
 
 ### Homepage Widget Ideas
 
 #### 1. "Last.fm For You" Section
+
 Shows personalized recommendations based on Last.fm data:
+
 - Similar artists you don't have
 - Tracks similar to your loved songs
 - "You might like" based on listening history
 
 #### 2. "Listening Stats" Widget
+
 Quick stats overlay:
+
 - Scrobbles this week
 - Top artist of the week
 - Listening streak
 
 #### 3. "Rediscover" Section
+
 Surfaces old favorites:
-- "Haven't heard in a while" 
+
+- "Haven't heard in a while"
 - Based on `user.getLovedTracks` + local play history
 
 #### 4. "Weekly Mixtape" Auto-Playlist
+
 Auto-generated playlist that updates weekly:
+
 - Mix of Last.fm recommendations + local favorites
 - Shown prominently in Music section
 
@@ -390,11 +412,12 @@ Auto-generated playlist that updates weekly:
 ### Artist Images (IRemoteImageProvider)
 
 **API Flow:**
-```
+
+```text
 artist.getInfo(artist=name)
   → response.artist.image
   → Return ImageInfo array
-```
+```text
 
 | Last.fm Field | Jellyfin Target |
 |---------------|-----------------|
@@ -404,20 +427,22 @@ artist.getInfo(artist=name)
 ### Album Images (IRemoteImageProvider)
 
 **API Flow:**
-```
+
+```text
 album.getInfo(artist=name, album=name)
   → response.album.image
   → Return ImageInfo array
-```
+```text
 
 ### Track/Artist Bio
 
 **API Flow:**
-```
+
+```text
 artist.getInfo(artist=name)
   → response.artist.bio.content
   → Set MusicArtist.Overview
-```
+```text
 
 ---
 
@@ -486,7 +511,7 @@ private string Normalize(string? input)
         .Replace("  ", " ")
         .Trim();
 }
-```
+```text
 
 ### Artist Matching
 
@@ -535,7 +560,7 @@ private string NormalizeArtist(string name)
     if (n.StartsWith("the ")) n = n.Substring(4);
     return n;
 }
-```
+```text
 
 ---
 
@@ -593,7 +618,7 @@ public class LastfmSyncTask : IScheduledTask
         }
     }
 }
-```
+```text
 
 ### Playlist Auto-Generation Task
 
@@ -628,7 +653,7 @@ public class LastfmPlaylistTask : IScheduledTask
         }
     }
 }
-```
+```text
 
 ---
 

@@ -7,7 +7,7 @@ Configuration for Zed editor.
 | Platform | Command |
 |----------|---------|
 | macOS | `brew install --cask zed` |
-| Linux | Download from https://zed.dev/download |
+| Linux | Download from <https://zed.dev/download> |
 | Windows | Not yet supported |
 
 ## Required Extensions

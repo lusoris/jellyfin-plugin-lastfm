@@ -50,6 +50,7 @@ _logger.LogInformation($"Scrobbling {track.Name}");  // Allocates string every c
 ```
 
 **Requirements:**
+
 - Class must be `partial`
 - Method must be `partial`
 - `Level` and `Message` are required
@@ -372,6 +373,7 @@ public Task StopAsync(CancellationToken ct)
 ---
 
 **Related**:
+
 - [csharp-security.md](csharp-security.md) - Security patterns
 - [../workflow/development-workflow.md](../workflow/development-workflow.md) - Build & testing
 - [../ide-setup.instructions.md](../ide-setup.instructions.md) - Development environment

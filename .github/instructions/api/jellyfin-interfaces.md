@@ -23,6 +23,7 @@ public interface ISessionManager
 ```
 
 **Usage:**
+
 ```csharp
 _sessionManager.PlaybackStart += OnPlaybackStart;
 _sessionManager.PlaybackStopped += OnPlaybackStopped;
@@ -49,6 +50,7 @@ public interface IUserDataManager
 ```
 
 **Save Reasons:**
+
 | Reason | Value | When |
 |--------|-------|------|
 | `PlaybackStart` | 1 | Playback begins |
@@ -77,6 +79,7 @@ public interface ILibraryManager
 ```
 
 **Query Example:**
+
 ```csharp
 var query = new InternalItemsQuery
 {

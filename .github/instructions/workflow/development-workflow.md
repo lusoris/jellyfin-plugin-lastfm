@@ -16,27 +16,30 @@ dotnet build Jellyfin.Plugin.Lastfm.sln -c Release
 
 # Clean build
 dotnet clean Jellyfin.Plugin.Lastfm.sln && dotnet build Jellyfin.Plugin.Lastfm.sln
-```
+```text
 
 ## Performance Optimizations
 
 The codebase includes several optimizations for production use:
 
 ### 1. Caching Layer (`LibraryCacheService`)
+
 - **Location**: `Jellyfin.Plugin.Lastfm/Services/LibraryCacheService.cs`
 - **Purpose**: Reduces repeated database queries via `IMemoryCache`
-- **Cache TTLs**: 
+- **Cache TTLs**:
   - MBID lookups: 30 minutes
   - Item lookups: 5 minutes
   - Query results: 10 minutes
 - **Features**: Batch operations, cache warming, invalidation
 
 ### 2. Code Deduplication (`AudioMapper`)
+
 - **Location**: `Jellyfin.Plugin.Lastfm/Adapters/AudioMapper.cs`
 - **Purpose**: Centralized Audio → MediaItemDto mapping
 - **Optimization**: String interning for common values (<100 chars)
 
 ### 3. Batch Operations (`TrackMatcherService`)
+
 - **Location**: `Jellyfin.Plugin.Lastfm/Services/TrackMatcherService.cs`
 - **Purpose**: Match multiple tracks in single operation
 - **Strategy**: MBID batch lookup → name-based fallback
@@ -51,11 +54,13 @@ See [OPTIMIZATIONS.md](../OPTIMIZATIONS.md) for detailed metrics.
 ⚠️ **CRITICAL**: Before updating targetAbi to a new Jellyfin version, ALWAYS:
 
 ### 1. Check Jellyfin Changelogs
-```
+
+```text
 https://github.com/jellyfin/jellyfin/releases
-```
+```text
 
 **Look for:**
+
 - Breaking API changes
 - Deprecated interfaces (e.g., `IServerEntryPoint` → `IHostedService`)
 - Changed event signatures (`ISessionManager`, `IUserDataManager`)
@@ -63,32 +68,38 @@ https://github.com/jellyfin/jellyfin/releases
 - Database migrations that affect plugins
 
 ### 2. Check GitHub Issues
-```
+
+```text
 https://github.com/jellyfin/jellyfin/issues?q=plugin
 https://github.com/jesseward/jellyfin-plugin-lastfm/issues
-```
+```text
 
 **Look for:**
+
 - Reported plugin compatibility issues
 - Known breaking changes
 - Workarounds for API changes
 
 ### 3. Check Upstream Repository
-```
+
+```text
 https://github.com/jesseward/jellyfin-plugin-lastfm/commits/master
-```
+```text
 
 **Look for:**
+
 - Recent patches for Jellyfin compatibility
 - Bug fixes we might be missing
 - Feature additions to consider merging
 
 ### 4. Document Findings
+
 - Add notes to commit message about what was checked
 - Update this file if new patterns are discovered
 - Create GitHub issue if breaking changes found
 
 **Example from 10.11.0 → 10.11.6 analysis (Jan 2026):**
+
 - 10.11.1-10.11.6: Only bugfixes, no plugin API changes
 - 10.11.0: Major release with 396 changes, but `ISessionManager` events unchanged
 - `OnPlaybackXXX` REST endpoints deprecated (not events - we use events, so OK)
@@ -99,6 +110,7 @@ https://github.com/jesseward/jellyfin-plugin-lastfm/commits/master
 ## Branch Strategy
 
 ### Branches
+
 - **`main`** - Stable releases only. Protected branch.
 - **`develop`** - Development branch. All PRs target this branch.
 
@@ -120,13 +132,16 @@ https://github.com/jesseward/jellyfin-plugin-lastfm/commits/master
   <!-- Packages NOT provided by Jellyfin need NO ExcludeAssets -->
   <PackageReference Include="Microsoft.Extensions.Http" Version="9.0.4" />
 </ItemGroup>
-```
+```text
 
 ### Why ExcludeAssets?
+
 When `ExcludeAssets` is missing, the Jellyfin DLLs get copied into the plugin folder. This causes assembly conflicts because Jellyfin already has these DLLs loaded. The plugin shows as "NotSupported" or fails silently.
 
 ### Packages Jellyfin Provides (transitively)
+
 These are available via Jellyfin.Controller and should NOT be added to your csproj:
+
 - `Microsoft.Extensions.Caching.Memory`
 - `Microsoft.Extensions.Logging`
 - `Microsoft.Extensions.DependencyInjection`
@@ -134,38 +149,45 @@ These are available via Jellyfin.Controller and should NOT be added to your cspr
 - `System.Text.Json`
 
 ### Packages You MUST Add
+
 These are NOT provided by Jellyfin:
+
 - `Microsoft.Extensions.Http` (for `IHttpClientFactory`)
 
 ### Version Matching
+
 - Jellyfin packages: Use wildcards like `10.*-*` to auto-update
 - Other packages: Check Jellyfin's own dependencies for compatible versions
 
 ---
 
 ### Workflow
+
 1. Create feature branch from `develop`:
+
    ```bash
    git checkout develop
    git pull origin develop
    git checkout -b feature/my-feature
    ```
 
-2. Make changes, commit, push:
+1. Make changes, commit, push:
+
    ```bash
    git add .
    git commit -m "feat: Description"
    git push origin feature/my-feature
    ```
 
-3. Create PR to `develop` branch
+2. Create PR to `develop` branch
 
-4. After review & merge to `develop`, test in development
+3. After review & merge to `develop`, test in development
 
-5. When ready for release:
+4. When ready for release:
    - Create PR from `develop` → `main`
    - Merge to `main`
    - Tag the release on `main`:
+
      ```bash
      git checkout main
      git pull origin main
@@ -174,6 +196,7 @@ These are NOT provided by Jellyfin:
      ```
 
 ### CI/CD Triggers
+
 - **Push to `develop`**: Lint → Test → Build (instant feedback)
 - **PR to `main`**: Lint → Test → Build (gatekeeper before release)
 - **Tag push**: Creates GitHub Release with ZIP
@@ -183,36 +206,41 @@ These are NOT provided by Jellyfin:
 ## Version Management
 
 ### Version Scheme
+
 **Format**: `{target-system}-{jellyfin_major}.{jellyfin_minor}.{jellyfin_patch}.{plugin_revision}`
 
 **Target System**: `jellyfin`, `emby`, `plex`
 
 Examples:
+
 - `jellyfin-10.11.6.0` - Initial release for Jellyfin 10.11.6
 - `jellyfin-10.11.6.1` - Bugfix release for Jellyfin 10.11.6
 - `emby-4.8.0.0` - Initial release for Emby 4.8.0
 
 ### Assembly Version (Jellyfin.Plugin.Lastfm.csproj)
+
 ```xml
 <PropertyGroup>
     <Version>10.11.6.0</Version>
     <TargetFramework>net9.0</TargetFramework>
     <AssemblyVersion>10.11.6.0</AssemblyVersion>
 </PropertyGroup>
-```
+```text
 
 ### Plugin Metadata (build.yaml)
+
 ```yaml
 version: 10.11.6.0             # Plugin version (matches Jellyfin + revision)
 targetAbi: 10.11.6.0           # Jellyfin ABI target
-```
+```text
 
 ### Release Tagging
+
 ```bash
 # Example for Jellyfin
 git tag -a jellyfin-10.11.6.0 -m "Release Jellyfin 10.11.6.0"
 git push origin jellyfin-10.11.6.0
-```
+```text
 
 **Tag Format**: `{target-system}-{jellyfin_version}.{revision}` (e.g., `jellyfin-10.11.6.0`, `emby-4.8.0.1`)
 
@@ -221,18 +249,21 @@ git push origin jellyfin-10.11.6.0
 ## Release Workflow (GitHub Actions)
 
 ### Trigger: Tag Push
+
 ```bash
 git tag -a 10.11.6.1 && git push origin 10.11.6.1
-```
+```text
 
-### Automatic Steps:
+### Automatic Steps
+
 1. Workflow `create-github-release.yml` triggers
 2. Builds release: `dotnet build -c Release`
 3. Creates ZIP: `lastfm_10.11.6.1.zip`
 4. Updates manifest: `manifest.json` with new version
 5. Creates GitHub Release with ZIP
 
-### Manual Alternative:
+### Manual Alternative
+
 ```bash
 # Build release manually
 dotnet build Jellyfin.Plugin.Lastfm -c Release
@@ -240,13 +271,14 @@ dotnet build Jellyfin.Plugin.Lastfm -c Release
 # Create ZIP from bin/Release/net9.0/
 cd Jellyfin.Plugin.Lastfm/bin/Release/net9.0
 zip -j ../../../lastfm_10.11.6.0.zip Jellyfin.Plugin.Lastfm.dll
-```
+```text
 
 ---
 
 ## Testing Strategy
 
 ### Current State
+
 - No formal unit test project
 - Manual integration testing via Jellyfin instance
 - Test audio files in `tests/` directory
@@ -308,7 +340,7 @@ public class PluginConfigurationTests
         // Save and reload config
     }
 }
-```
+```text
 
 ---
 
@@ -319,35 +351,39 @@ public class PluginConfigurationTests
 **Before pushing changes:**
 
 1. Run security scan:
+
 ```bash
 snyk code scan Jellyfin.Plugin.Lastfm/
-```
+```text
 
-2. Review findings:
+1. Review findings:
    - HTTP client usage (no direct instantiation)
    - JSON deserialization (XXE, JSON bombs)
    - String formatting (no user input concatenation)
    - Password/key handling (never log, never transmit)
 
-3. Fix High/Critical issues
+2. Fix High/Critical issues
 
-4. Rescan to verify:
+3. Rescan to verify:
+
 ```bash
 snyk code scan Jellyfin.Plugin.Lastfm/
-```
+```text
 
-5. Commit and push only when clean
+1. Commit and push only when clean
 
 ---
 
 ## CI/CD Workflows
 
 ### build-plugin.yaml (On main branch)
+
 - Triggers: Push to main, pull requests
 - Builds and validates plugin
 - Checks compile errors
 
 ### create-github-release.yml (On tag)
+
 - Triggers: Push new tag (v*.*.*)
 - Builds release
 - Creates GitHub release
@@ -359,6 +395,7 @@ snyk code scan Jellyfin.Plugin.Lastfm/
 ## Local Development Setup
 
 ### Prerequisites
+
 - .NET 9.0 SDK
 - VS Code or Visual Studio
 - Jellyfin instance for testing
@@ -372,7 +409,7 @@ docker run -d \
   -v jellyfin-config:/config \
   -v jellyfin-media:/media \
   jellyfin/jellyfin:latest
-```
+```text
 
 ### Install Plugin Locally
 
@@ -385,7 +422,7 @@ cp Jellyfin.Plugin.Lastfm/bin/Release/net9.0/Jellyfin.Plugin.Lastfm.dll \
    ~/.config/jellyfin/plugins/Jellyfin.Plugin.Lastfm.dll
 
 # Restart Jellyfin (plugin auto-loads)
-```
+```text
 
 ---
 
@@ -416,7 +453,7 @@ cp Jellyfin.Plugin.Lastfm/bin/Release/net9.0/Jellyfin.Plugin.Lastfm.dll \
         }
     ]
 }
-```
+```text
 
 ### Logging in Development
 
@@ -427,13 +464,13 @@ _logger.LogDebug("Playback stopped at {0}s of {1}s",
 
 // Check Jellyfin logs:
 // ~/.local/share/jellyfin/logs/
-```
+```text
 
 ---
 
 ## Commit Message Format
 
-```
+```text
 feat: Add configurable scrobbling thresholds
 fix: Prevent duplicate scrobbles in 15s window
 docs: Update scrobbling rules documentation
@@ -442,9 +479,10 @@ style: Format code with prettier
 test: Add unit tests for API client
 perf: Cache metadata queries
 refactor: Extract common validation logic
-```
+```text
 
 **Prefixes**:
+
 - `feat` - New feature
 - `fix` - Bug fix
 - `docs` - Documentation
@@ -459,33 +497,38 @@ refactor: Extract common validation logic
 ## Creating a PR
 
 1. Create feature branch:
+
 ```bash
 git checkout -b feature/my-feature
-```
+```text
 
-2. Make changes and test locally
+1. Make changes and test locally
 
-3. Run security scan:
+2. Run security scan:
+
 ```bash
 snyk code scan Jellyfin.Plugin.Lastfm/
-```
+```text
 
-4. Commit with descriptive message:
+1. Commit with descriptive message:
+
 ```bash
 git commit -m "feat: Detailed description"
-```
+```text
 
-5. Push to origin:
+1. Push to origin:
+
 ```bash
 git push origin feature/my-feature
-```
+```text
 
-6. Create PR against `main` branch
+1. Create PR against `main` branch
 
-7. Wait for CI/CD checks and review
+2. Wait for CI/CD checks and review
 
 ---
 
 **Related**:
+
 - [../snyk_rules.instructions.md](../snyk_rules.instructions.md) - Security scanning
 - [../csharp/csharp-security.md](../csharp/csharp-security.md) - Security patterns

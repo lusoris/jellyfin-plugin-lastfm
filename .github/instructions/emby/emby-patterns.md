@@ -89,6 +89,7 @@ public async Task ProcessDataAsync()
 ```
 
 **Why ConfigureAwait(false)?**
+
 - Avoids deadlocks in ASP.NET and WinForms
 - Improves performance by not capturing SynchronizationContext
 - Standard practice for library code
@@ -395,6 +396,7 @@ private async void OnUserDataSaved(object sender, UserDataSaveEventArgs e)
 ```
 
 **Why async void?**
+
 - Event handlers have `void` return type in .NET events
 - `async void` is the ONLY way to use await in event handlers
 - Always wrap in try-catch to prevent unhandled exceptions
@@ -643,6 +645,7 @@ public async Task<Dictionary<string, Audio>> FindTracksByMusicBrainzIdsAsync(
 ---
 
 **Related:**
+
 - [emby-architecture.md](emby-architecture.md) - Plugin lifecycle
 - [emby-api.md](emby-api.md) - API reference
 - [../csharp/csharp-security.md](../csharp/csharp-security.md) - Security patterns
@@ -674,5 +677,6 @@ public async Task<List<Track>> GetTracksAsync()
 ---
 
 **Related:**
+
 - [../csharp/csharp-patterns.md](../csharp/csharp-patterns.md) - General C# patterns
 - [emby-api.md](emby-api.md) - API reference

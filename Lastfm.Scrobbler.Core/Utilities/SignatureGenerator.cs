@@ -50,7 +50,12 @@ public class SignatureGenerator : ISignatureGenerator
         using var md5 = MD5.Create();
         var hashBytes = md5.ComputeHash(inputBytes);
 
-        // Convert to uppercase hex string (Last.fm requires uppercase)
-        return BitConverter.ToString(hashBytes).Replace("-", string.Empty);
+        // Convert to lowercase hex string (Last.fm API requires lowercase)
+        var sb = new StringBuilder(hashBytes.Length * 2);
+        foreach (var b in hashBytes)
+        {
+            sb.AppendFormat("{0:x2}", b); // x2 = lowercase hex, 2 digits
+        }
+        return sb.ToString();
     }
 }

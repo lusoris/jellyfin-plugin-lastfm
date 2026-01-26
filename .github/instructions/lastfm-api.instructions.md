@@ -8,20 +8,22 @@ This instruction file contains the complete Last.fm API structure for the Jellyf
 
 ## API Base URL
 
-```
+```text
 https://ws.audioscrobbler.com/2.0/
-```
+```text
 
 All requests use `format=json` parameter.
 
 ## Authentication
 
 ### auth.getMobileSession
+
 Get a session key for a user (mobile auth flow).
 
 **Method:** `auth.getMobileSession` (POST, requires signature)
 
 **Parameters:**
+
 | Parameter | Required | Description |
 |-----------|----------|-------------|
 | username | Yes | Last.fm username |
@@ -30,6 +32,7 @@ Get a session key for a user (mobile auth flow).
 | api_sig | Yes | MD5 signature |
 
 **Response:**
+
 ```json
 {
   "session": {
@@ -38,16 +41,18 @@ Get a session key for a user (mobile auth flow).
     "subscriber": 0
   }
 }
-```
+```text
 
 ## Scrobbling Methods
 
 ### track.scrobble
+
 Scrobble a track (mark as played).
 
 **Method:** `track.scrobble` (POST, requires signature + session)
 
 **Parameters:**
+
 | Parameter | Required | Description |
 |-----------|----------|-------------|
 | artist | Yes | Artist name |
@@ -62,10 +67,12 @@ Scrobble a track (mark as played).
 | sk | Yes | Session key |
 
 **Scrobble Rules (from Last.fm docs):**
+
 - Track must be longer than 30 seconds
 - Track must have played for at least half its duration OR 4 minutes (whichever is earlier)
 
 **Response:**
+
 ```json
 {
   "scrobbles": {
@@ -78,14 +85,16 @@ Scrobble a track (mark as played).
     }
   }
 }
-```
+```text
 
 ### track.updateNowPlaying
+
 Update "Now Playing" status.
 
 **Method:** `track.updateNowPlaying` (POST, requires signature + session)
 
 **Parameters:**
+
 | Parameter | Required | Description |
 |-----------|----------|-------------|
 | artist | Yes | Artist name |
@@ -101,11 +110,13 @@ Update "Now Playing" status.
 ## Love/Unlove Methods
 
 ### track.love
+
 Mark a track as loved.
 
 **Method:** `track.love` (POST, requires signature + session)
 
 **Parameters:**
+
 | Parameter | Required | Description |
 |-----------|----------|-------------|
 | artist | Yes | Artist name |
@@ -115,6 +126,7 @@ Mark a track as loved.
 | sk | Yes | Session key |
 
 ### track.unlove
+
 Remove loved status from a track.
 
 **Method:** `track.unlove` (POST, requires signature + session)
@@ -124,11 +136,13 @@ Remove loved status from a track.
 ## User Data Methods (Read-Only)
 
 ### user.getLovedTracks
+
 Get loved tracks for a user.
 
 **Method:** `user.getLovedTracks` (GET)
 
 **Parameters:**
+
 | Parameter | Required | Description |
 |-----------|----------|-------------|
 | user | Yes | Last.fm username |
@@ -137,6 +151,7 @@ Get loved tracks for a user.
 | api_key | Yes | Your API key |
 
 **Response:**
+
 ```json
 {
   "lovedtracks": {
@@ -156,14 +171,16 @@ Get loved tracks for a user.
     ]
   }
 }
-```
+```text
 
 ### user.getTopTracks
+
 Get top tracks for a user (includes playcount).
 
 **Method:** `user.getTopTracks` (GET)
 
 **Parameters:**
+
 | Parameter | Required | Description |
 |-----------|----------|-------------|
 | user | Yes | Last.fm username |
@@ -186,14 +203,16 @@ Get top tracks for a user (includes playcount).
     ]
   }
 }
-```
+```text
 
 ### user.getRecentTracks
+
 Get recently played tracks.
 
 **Method:** `user.getRecentTracks` (GET)
 
 **Parameters:**
+
 | Parameter | Required | Description |
 |-----------|----------|-------------|
 | user | Yes | Last.fm username |
@@ -205,11 +224,13 @@ Get recently played tracks.
 | api_key | Yes | Your API key |
 
 ### user.getInfo
+
 Get user profile info.
 
 **Method:** `user.getInfo` (GET)
 
 **Parameters:**
+
 | Parameter | Required | Description |
 |-----------|----------|-------------|
 | user | Yes | Last.fm username |
@@ -218,11 +239,13 @@ Get user profile info.
 ## Metadata Methods
 
 ### track.getInfo
+
 Get track metadata.
 
 **Method:** `track.getInfo` (GET)
 
 **Parameters:**
+
 | Parameter | Required | Description |
 |-----------|----------|-------------|
 | artist | Yes* | Artist name |
@@ -232,11 +255,13 @@ Get track metadata.
 | api_key | Yes | Your API key |
 
 ### artist.getInfo
+
 Get artist metadata including images.
 
 **Method:** `artist.getInfo` (GET)
 
 **Parameters:**
+
 | Parameter | Required | Description |
 |-----------|----------|-------------|
 | artist | Yes* | Artist name |
@@ -245,11 +270,13 @@ Get artist metadata including images.
 | api_key | Yes | Your API key |
 
 ### album.getInfo
+
 Get album metadata including images.
 
 **Method:** `album.getInfo` (GET)
 
 **Parameters:**
+
 | Parameter | Required | Description |
 |-----------|----------|-------------|
 | artist | Yes* | Artist name |
@@ -261,11 +288,13 @@ Get album metadata including images.
 ## Recommendation & Similar Methods
 
 ### artist.getSimilar
+
 Get similar artists based on Last.fm's recommendation engine.
 
 **Method:** `artist.getSimilar` (GET)
 
 **Parameters:**
+
 | Parameter | Required | Description |
 |-----------|----------|-------------|
 | artist | Yes* | Artist name |
@@ -275,6 +304,7 @@ Get similar artists based on Last.fm's recommendation engine.
 | api_key | Yes | Your API key |
 
 **Response:**
+
 ```json
 {
   "similarartists": {
@@ -290,14 +320,16 @@ Get similar artists based on Last.fm's recommendation engine.
     "@attr": { "artist": "Original Artist" }
   }
 }
-```
+```text
 
 ### track.getSimilar
+
 Get similar tracks.
 
 **Method:** `track.getSimilar` (GET)
 
 **Parameters:**
+
 | Parameter | Required | Description |
 |-----------|----------|-------------|
 | artist | Yes* | Artist name |
@@ -308,6 +340,7 @@ Get similar tracks.
 | api_key | Yes | Your API key |
 
 **Response:**
+
 ```json
 {
   "similartracks": {
@@ -322,16 +355,18 @@ Get similar tracks.
     ]
   }
 }
-```
+```text
 
 ## User Library & Stats Methods
 
 ### user.getTopArtists
+
 Get top artists for a user by time period.
 
 **Method:** `user.getTopArtists` (GET)
 
 **Parameters:**
+
 | Parameter | Required | Description |
 |-----------|----------|-------------|
 | user | Yes | Last.fm username |
@@ -341,6 +376,7 @@ Get top artists for a user by time period.
 | api_key | Yes | Your API key |
 
 **Response:**
+
 ```json
 {
   "topartists": {
@@ -355,14 +391,16 @@ Get top artists for a user by time period.
     "@attr": { "user": "username", "totalPages": "10" }
   }
 }
-```
+```text
 
 ### user.getTopAlbums
+
 Get top albums for a user by time period.
 
 **Method:** `user.getTopAlbums` (GET)
 
 **Parameters:**
+
 | Parameter | Required | Description |
 |-----------|----------|-------------|
 | user | Yes | Last.fm username |
@@ -372,11 +410,13 @@ Get top albums for a user by time period.
 | api_key | Yes | Your API key |
 
 ### library.getArtists
+
 Get all artists in a user's library with play counts.
 
 **Method:** `library.getArtists` (GET)
 
 **Parameters:**
+
 | Parameter | Required | Description |
 |-----------|----------|-------------|
 | user | Yes | Last.fm username |
@@ -387,11 +427,13 @@ Get all artists in a user's library with play counts.
 ## Tag-Based Discovery
 
 ### tag.getTopTracks
+
 Get top tracks tagged with a specific tag.
 
 **Method:** `tag.getTopTracks` (GET)
 
 **Parameters:**
+
 | Parameter | Required | Description |
 |-----------|----------|-------------|
 | tag | Yes | Tag name (e.g., "electronic", "rock") |
@@ -400,11 +442,13 @@ Get top tracks tagged with a specific tag.
 | api_key | Yes | Your API key |
 
 ### tag.getTopArtists
+
 Get top artists tagged with a specific tag.
 
 **Method:** `tag.getTopArtists` (GET)
 
 **Parameters:**
+
 | Parameter | Required | Description |
 |-----------|----------|-------------|
 | tag | Yes | Tag name |
@@ -413,22 +457,26 @@ Get top artists tagged with a specific tag.
 | api_key | Yes | Your API key |
 
 ### tag.getSimilar
+
 Get similar tags.
 
 **Method:** `tag.getSimilar` (GET)
 
 **Parameters:**
+
 | Parameter | Required | Description |
 |-----------|----------|-------------|
 | tag | Yes | Tag name |
 | api_key | Yes | Your API key |
 
 ### user.getTopTags
+
 Get tags used by a specific user.
 
 **Method:** `user.getTopTags` (GET)
 
 **Parameters:**
+
 | Parameter | Required | Description |
 |-----------|----------|-------------|
 | user | Yes | Last.fm username |
@@ -436,11 +484,13 @@ Get tags used by a specific user.
 | api_key | Yes | Your API key |
 
 ### user.getPersonalTags
+
 Get tracks/artists/albums tagged by a user with a specific tag.
 
 **Method:** `user.getPersonalTags` (GET)
 
 **Parameters:**
+
 | Parameter | Required | Description |
 |-----------|----------|-------------|
 | user | Yes | Last.fm username |
@@ -453,11 +503,13 @@ Get tracks/artists/albums tagged by a user with a specific tag.
 ## Chart Methods (Global)
 
 ### chart.getTopTracks
+
 Get top tracks globally.
 
 **Method:** `chart.getTopTracks` (GET)
 
 **Parameters:**
+
 | Parameter | Required | Description |
 |-----------|----------|-------------|
 | limit | No | Results per page |
@@ -465,16 +517,19 @@ Get top tracks globally.
 | api_key | Yes | Your API key |
 
 ### chart.getTopArtists
+
 Get top artists globally.
 
 **Method:** `chart.getTopArtists` (GET)
 
 ### geo.getTopTracks
+
 Get top tracks by country.
 
 **Method:** `geo.getTopTracks` (GET)
 
 **Parameters:**
+
 | Parameter | Required | Description |
 |-----------|----------|-------------|
 | country | Yes | Country name (ISO 3166-1) |
@@ -485,11 +540,13 @@ Get top tracks by country.
 ## Weekly Charts
 
 ### user.getWeeklyTrackChart
+
 Get weekly track chart for a user.
 
 **Method:** `user.getWeeklyTrackChart` (GET)
 
 **Parameters:**
+
 | Parameter | Required | Description |
 |-----------|----------|-------------|
 | user | Yes | Last.fm username |
@@ -498,27 +555,32 @@ Get weekly track chart for a user.
 | api_key | Yes | Your API key |
 
 ### user.getWeeklyArtistChart
+
 Get weekly artist chart for a user.
 
 **Method:** `user.getWeeklyArtistChart` (GET)
 
 ### user.getWeeklyAlbumChart
+
 Get weekly album chart for a user.
 
 **Method:** `user.getWeeklyAlbumChart` (GET)
 
 ### user.getWeeklyChartList
+
 Get available weekly charts (timestamps).
 
 **Method:** `user.getWeeklyChartList` (GET)
 
 **Parameters:**
+
 | Parameter | Required | Description |
 |-----------|----------|-------------|
 | user | Yes | Last.fm username |
 | api_key | Yes | Your API key |
 
 **Response:**
+
 ```json
 {
   "weeklychartlist": {
@@ -528,16 +590,18 @@ Get available weekly charts (timestamps).
     ]
   }
 }
-```
+```text
 
 ## Social Methods
 
 ### user.getFriends
+
 Get friends of a user.
 
 **Method:** `user.getFriends` (GET)
 
 **Parameters:**
+
 | Parameter | Required | Description |
 |-----------|----------|-------------|
 | user | Yes | Last.fm username |
@@ -556,6 +620,7 @@ For authenticated requests, generate MD5 signature:
 4. Calculate MD5 hash
 
 **Example (C#):**
+
 ```csharp
 public static string GenerateSignature(Dictionary<string, string> parameters, string secret)
 {
@@ -570,7 +635,7 @@ public static string GenerateSignature(Dictionary<string, string> parameters, st
     var hash = md5.ComputeHash(Encoding.UTF8.GetBytes(signatureBase));
     return Convert.ToHexString(hash).ToLowerInvariant();
 }
-```
+```text
 
 ## Error Responses
 
@@ -579,9 +644,10 @@ public static string GenerateSignature(Dictionary<string, string> parameters, st
   "error": 6,
   "message": "User not found"
 }
-```
+```text
 
 **Common Error Codes:**
+
 | Code | Description |
 |------|-------------|
 | 2 | Invalid service |
@@ -626,39 +692,44 @@ public static string GenerateSignature(Dictionary<string, string> parameters, st
 ## Playlist Generation Strategies
 
 ### 1. "Similar to Recently Played"
+
 Based on tracks from recent history, find similar tracks in local library.
 
-```
+```text
 user.getRecentTracks → foreach track → track.getSimilar → match with Jellyfin library → create playlist
-```
+```text
 
 ### 2. "Rediscover Favorites"
+
 Find tracks you haven't listened to recently but similar to loved tracks.
 
-```
+```text
 user.getLovedTracks → artist.getSimilar → filter by local library → exclude recently played → create playlist
-```
+```text
 
 ### 3. "Top Tracks Mix"
+
 Playlist from your top tracks of a specific period.
 
-```
+```text
 user.getTopTracks(period=1month) → match with Jellyfin library → create playlist
-```
+```text
 
 ### 4. "Genre/Tag Discovery"
+
 Find tracks in your library matching certain tags.
 
-```
+```text
 user.getTopTags → foreach tag → tag.getTopTracks → match with local library → create playlist
-```
+```text
 
 ### 5. "Weekly Mixtape"
+
 Based on your weekly chart history.
 
-```
+```text
 user.getWeeklyTrackChart → match with Jellyfin library → create playlist
-```
+```text
 
 ## Notes for Implementation
 

@@ -12,6 +12,7 @@
 > **Modular Structure**: Instructions are split into focused modules. Load only what you need.
 
 ### 🚀 Getting Started
+
 | Index | Modules |
 |-------|---------|
 | **[ide-setup.instructions.md](ide-setup.instructions.md)** | → [ide/package-managers.md](ide/package-managers.md) (apt, brew, dnf, pacman, winget, choco...) |
@@ -21,6 +22,7 @@
 | [workflow/testing.instructions.md](workflow/testing.instructions.md) | xUnit, Moq, coverage |
 
 ### 📡 API References
+
 | Index | Modules |
 |-------|---------|
 | **[jellyfin-api.index.md](jellyfin-api.index.md)** | → [api/jellyfin-interfaces.md](api/jellyfin-interfaces.md) (ISessionManager, ILibraryManager) |
@@ -31,6 +33,7 @@
 | [api-cross-reference.instructions.md](api-cross-reference.instructions.md) | Jellyfin ↔ Last.fm mapping |
 
 ### 🏗️ Architecture
+
 | File | Description |
 |------|-------------|
 | [jellyfin-architecture.md](jellyfin-architecture.md) | Jellyfin plugin lifecycle, DI |
@@ -41,6 +44,7 @@
 | [OPTIMIZATIONS.md](OPTIMIZATIONS.md) | Performance improvements |
 
 ### ✅ Code Quality
+
 | File | Description |
 |------|-------------|
 | [csharp/csharp-patterns.md](csharp/csharp-patterns.md) | Performance, async, LoggerMessage |
@@ -53,17 +57,20 @@
 ## 🚀 Quick Start
 
 ### Prerequisites
+
 ```bash
 # .NET 9.0 SDK required
 dotnet --version  # Must be 9.0+
-```
+```text
 
 ### Build
+
 ```bash
 dotnet build Jellyfin.Plugin.Lastfm -c Release
-```
+```text
 
 ### IDE Setup
+
 See [ide-setup.instructions.md](ide-setup.instructions.md) for VS Code, Zed, or Rider configuration.
 
 ---
@@ -79,10 +86,12 @@ See [ide-setup.instructions.md](ide-setup.instructions.md) for VS Code, Zed, or 
 | Strict Mode | `TreatWarningsAsErrors=true` |
 
 ### Scrobbling Rules
+
 - Minimum track length: **30 seconds**
 - Scrobble threshold: **50% of track** OR **4 minutes** (whichever first)
 
 ### Critical Implementation Details
+
 | Aspect | Requirement |
 |--------|-------------|
 | MD5 Signature | **Lowercase hex** (`Convert.ToHexStringLower`) |
@@ -95,17 +104,17 @@ See [ide-setup.instructions.md](ide-setup.instructions.md) for VS Code, Zed, or 
 
 ## 📖 Event Flow
 
-```
+```text
 PlaybackStart → track.updateNowPlaying → Last.fm
 PlaybackStopped → validate (30s/50%/4min) → track.scrobble → Last.fm
 UserDataSaved (IsFavorite) → track.love/unlove → Last.fm
-```
+```text
 
 ---
 
 ## 📁 Project Structure
 
-```
+```text
 Jellyfin.Plugin.Lastfm/
 ├── Plugin.cs                    # Entry point, BasePlugin<T>
 ├── PluginServiceRegistrator.cs  # DI registration
@@ -122,7 +131,7 @@ Jellyfin.Plugin.Lastfm/
 ├── Providers/                   # Image providers
 ├── Api/                         # REST endpoints
 └── Configuration/               # Settings + web UI
-```
+```text
 
 ---
 

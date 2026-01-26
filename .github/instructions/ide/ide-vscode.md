@@ -23,6 +23,7 @@ Complete configuration for Visual Studio Code.
 ## Workspace Settings
 
 `.vscode/settings.json`:
+
 ```json
 {
   "dotnet.defaultSolution": "Jellyfin.Plugin.Lastfm.sln",
@@ -43,6 +44,7 @@ Complete configuration for Visual Studio Code.
 ## Launch Configuration
 
 `.vscode/launch.json`:
+
 ```json
 {
   "version": "0.2.0",
@@ -64,6 +66,7 @@ Complete configuration for Visual Studio Code.
 ## Tasks Configuration
 
 `.vscode/tasks.json`:
+
 ```json
 {
   "version": "2.0.0",
@@ -98,6 +101,7 @@ Complete configuration for Visual Studio Code.
 ## Extensions Recommendations
 
 `.vscode/extensions.json`:
+
 ```json
 {
   "recommendations": [
@@ -140,6 +144,7 @@ code --import-profile profile.json
 For working with multiple branches:
 
 `jellyfin-multi.code-workspace`:
+
 ```json
 {
   "folders": [

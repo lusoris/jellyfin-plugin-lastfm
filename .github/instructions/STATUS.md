@@ -26,7 +26,7 @@
 
 ## Architecture
 
-```
+```text
 Jellyfin.Plugin.Lastfm/
 ├── Plugin.cs                    # Entry point
 ├── PluginServiceRegistrator.cs  # DI registration
@@ -52,7 +52,7 @@ Jellyfin.Plugin.Lastfm/
 └── ScheduledTasks/
     ├── SyncLovedTracksTask.cs
     └── ProcessScrobbleQueueTask.cs
-```
+```text
 
 ## API Coverage
 
@@ -84,6 +84,7 @@ Jellyfin.Plugin.Lastfm/
 ---
 
 **Related:**
+
 - [jellyfin-architecture.md](jellyfin-architecture.md) - Plugin architecture
 - [workflow/development-workflow.md](workflow/development-workflow.md) - Development workflow
 - [OPTIMIZATIONS.md](OPTIMIZATIONS.md) - Performance improvements

@@ -32,18 +32,21 @@ Install via: `Settings → Plugins → Marketplace`
 ### Code Style
 
 `Settings → Editor → Code Style → C#`:
+
 - ✅ Enable EditorConfig support
 - ✅ Reformat code on save
 
 ### Toolset
 
 `Settings → Build, Execution, Deployment → Toolset`:
+
 - .NET CLI: Auto-detected
 - MSBuild: Bundled (recommended)
 
 ## Run Configuration
 
 Create `Run/Debug Configuration`:
+
 - **Type**: .NET Project
 - **Project**: `Jellyfin.Plugin.Lastfm`
 - **Configuration**: Release

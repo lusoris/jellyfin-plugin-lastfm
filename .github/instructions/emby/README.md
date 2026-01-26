@@ -7,6 +7,7 @@ Emby-specific documentation for Last.fm plugin development.
 ## Current Status
 
 Emby support is **not yet implemented**. The plugin currently targets:
+
 - **Jellyfin 10.11.6** (`.NET 9.0`) - ✅ Fully supported
 
 ## Emby Implementation Plan
@@ -14,6 +15,7 @@ Emby support is **not yet implemented**. The plugin currently targets:
 When Emby support is added, it will require:
 
 ### Technical Requirements
+
 - **Separate project**: `Emby.Plugin.Lastfm.csproj`
 - **Target Framework**: `.NET Framework 4.8`
 - **Emby SDK**: Via NuGet (MediaBrowser.Server.Core)
@@ -21,7 +23,9 @@ When Emby support is added, it will require:
 - **HTTP Client**: `IHttpClient` (not `IHttpClientFactory`)
 
 ### Shared Components
+
 The following components are platform-agnostic and can be reused:
+
 - `Lastfm.Scrobbler.Core` - API client, scrobble logic
 - `Lastfm.Scrobbler.Abstractions` - Interfaces/DTOs
 - Adapter pattern for platform differences
@@ -46,6 +50,7 @@ The following components are platform-agnostic and can be reused:
 ## Documentation (Ready for Implementation)
 
 Complete Emby documentation available:
+
 - [emby-api.md](emby-api.md) - Emby API reference (ISessionManager, ILibraryManager, IHttpClient)
 - [emby-architecture.md](emby-architecture.md) - Plugin lifecycle & structure (Entry points, DI, Events)
 - [emby-patterns.md](emby-patterns.md) - .NET Framework 4.8 patterns (async/await, LINQ, HTTP client)

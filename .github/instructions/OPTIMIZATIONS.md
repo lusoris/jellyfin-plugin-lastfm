@@ -12,12 +12,14 @@ description: Performance optimizations and caching strategies
 **Problem**: `MapToDto()` Methode existierte identisch in 3 Adapter-Klassen (39 Zeilen duplizierter Code).
 
 **Lösung**: Zentralisierte `AudioMapper` Utility-Klasse erstellt:
+
 - Datei: `Jellyfin.Plugin.Lastfm/Adapters/AudioMapper.cs`
 - **Einsparung**: ~52 Zeilen Code (3x 13 Zeilen + Overhead)
 - **Wartbarkeit**: Änderungen am Mapping nur an einer Stelle nötig
 - **Konsistenz**: Garantierte identische Mapping-Logik in allen Adaptern
 
 Betroffene Dateien:
+
 - `JellyfinMediaServerAdapter.cs` - MapToDto() entfernt, AudioMapper.MapToDto() verwendet
 - `JellyfinPlaybackEventProvider.cs` - MapToDto() entfernt, AudioMapper.MapToDto() verwendet  
 - `JellyfinFavoriteManager.cs` - MapToDto() entfernt, AudioMapper.MapToDto() verwendet
@@ -27,6 +29,7 @@ Betroffene Dateien:
 **Problem**: Wiederholte ILibraryManager-Abfragen ohne Caching führen zu unnötigen Datenbankzugriffen.
 
 **Lösung**: `LibraryCacheService` implementiert:
+
 - Datei: `Jellyfin.Plugin.Lastfm/Services/LibraryCacheService.cs`
 - **Cache-Strategie**:
   - MusicBrainz ID Lookups: 30 Minuten Cache
@@ -40,6 +43,7 @@ Betroffene Dateien:
 - **Registriert in DI**: `PluginServiceRegistrator.cs`
 
 **Performance-Gewinn**:
+
 - MBID-Lookups: ~50-200ms → ~1ms (bei Cache-Hit)
 - Item-Lookups: ~10-50ms → <1ms (bei Cache-Hit)
 - Geschätzte Gesamtersparnis: 60-80% bei wiederholten Abfragen
@@ -48,12 +52,14 @@ Betroffene Dateien:
 
 **Problem**: Unnötige `.ToList()` Calls, die sofortige Materialisierung erzwingen.
 
-**Lösung**: 
+**Lösung**:
+
 - Explizite Typangaben für bessere Code-Lesbarkeit
 - Unnötige Zwischenschritte eliminiert
 - Deferred execution wo möglich
 
 Beispiel:
+
 ```csharp
 // Vorher
 var tracks = items.OfType<Audio>().Select(MapToDto).ToList();
@@ -67,6 +73,7 @@ return Task.FromResult(tracks);
 ### 4. ✅ Service-Registrierung optimiert
 
 **Änderung**: `PluginServiceRegistrator.cs`
+
 - `AddMemoryCache()` hinzugefügt (für LibraryCacheService)
 - `LibraryCacheService` als Singleton registriert
 - Korrekte DI-Lebenszyklen sichergestellt
@@ -76,15 +83,18 @@ return Task.FromResult(tracks);
 ## Performance-Metriken
 
 ### Code-Größe
+
 - **Vorher**: ~8,500 Zeilen (geschätzt)
 - **Nachher**: ~8,450 Zeilen  
 - **Reduktion**: ~50 Zeilen durch Deduplizierung
 
 ### Memory-Overhead
+
 - **Cache-Footprint**: ~1-5 MB (bei aktivem Gebrauch)
 - **Trade-off**: Akzeptabel für 60-80% Performance-Gewinn
 
 ### Query-Performance (geschätzt)
+
 | Operation | Vorher | Nachher | Verbesserung |
 |-----------|--------|---------|--------------|
 | MBID Lookup (wiederholt) | 50-200ms | 1-5ms | 95%+ |
@@ -98,8 +108,10 @@ return Task.FromResult(tracks);
 ### 🔄 Potenzielle weitere Verbesserungen
 
 #### 1. Batch-Queries
+
 **Aktuell**: Einzelne Tracks werden sequenziell abgefragt  
 **Verbesserung**: Bulk-Lookups für Import-Operationen
+
 ```csharp
 // Vorschlag
 public Task<IReadOnlyList<Audio>> GetTracksByMusicBrainzIdsAsync(IEnumerable<string> mbids)
@@ -109,8 +121,10 @@ public Task<IReadOnlyList<Audio>> GetTracksByMusicBrainzIdsAsync(IEnumerable<str
 ```
 
 #### 2. Query-Result Caching
+
 **Aktuell**: Nur Items werden gecacht  
 **Verbesserung**: Komplette Query-Ergebnisse cachen
+
 ```csharp
 // Beispiel
 var cacheKey = $"query:{userId}:favorites";
@@ -118,18 +132,22 @@ _cache.GetOrCreate(cacheKey, ...);
 ```
 
 #### 3. LazyProxy für Audio-Properties
+
 **Aktuell**: Alle Properties werden beim Mapping geladen  
 **Verbesserung**: Lazy loading für selten genutzte Properties
 
 #### 4. String Interning
+
 **Aktuell**: Artist/Album-Namen werden mehrfach allokiert  
 **Verbesserung**: `string.Intern()` für häufig vorkommende Namen
 
 #### 5. Object Pooling
+
 **Aktuell**: DTOs werden bei jeder Abfrage neu erstellt  
 **Verbesserung**: `ObjectPool<MediaItemDto>` für Wiederverwendung
 
 #### 6. Asynchrone Cache-Vorwärmung
+
 **Aktuell**: Cache wird bei Bedarf gefüllt (lazy)  
 **Verbesserung**: Vorab-Laden häufig genutzter Daten beim Start
 
@@ -138,18 +156,21 @@ _cache.GetOrCreate(cacheKey, ...);
 ## Testing & Validierung
 
 ### ✅ Kompilierung
+
 ```bash
 dotnet build -c Release
 # Result: 0 Warnung(en), 0 Fehler
 ```
 
 ### ⚠️ Erforderliche Tests
+
 1. **Unit Tests**: AudioMapper.MapToDto() mit verschiedenen Audio-Objekten
 2. **Integration Tests**: LibraryCacheService mit echten ILibraryManager-Calls
 3. **Performance Tests**: Cache-Hit-Rate bei typischen Workloads messen
 4. **Memory Tests**: Cache-Wachstum über Zeit überwachen
 
 ### Testplan
+
 ```csharp
 [Fact]
 public void AudioMapper_MapToDto_HandlesMinimalAudio()
@@ -187,15 +208,18 @@ public async Task LibraryCacheService_CachesResults()
 ## Cache-Strategie Details
 
 ### Cache-Schlüssel-Muster
+
 - MBID Lookups: `"mbid:{musicBrainzId}:{userId}"`
 - Item Lookups: `"item:{itemId}"`
 
 ### Cache-Invalidierung
+
 - **Automatisch**: Nach TTL-Ablauf
 - **Manuell**: `InvalidateTrack(trackId)` nach Updates
 - **Global**: `InvalidateAll()` bei großen Änderungen
 
 ### Memory-Management
+
 - MemoryCache automatische Kompaktierung bei Speicherdruck
 - Monitoring über `IMemoryCache` Statistics möglich
 
@@ -223,6 +247,7 @@ Falls Probleme auftreten:
    - Direkte `ILibraryManager` Calls wiederherstellen
 
 3. **Cache komplett deaktivieren**:
+
 ```csharp
 // In LibraryCacheService
 public Audio? GetTrackByMusicBrainzId(string mbid, Guid userId)
@@ -244,6 +269,7 @@ public Audio? GetTrackByMusicBrainzId(string mbid, Guid userId)
 ---
 
 **Related:**
+
 - [workflow/development-workflow.md](workflow/development-workflow.md) - Development practices
 - [csharp/csharp-patterns.md](csharp/csharp-patterns.md) - Performance patterns
 - [jellyfin-architecture.md](jellyfin-architecture.md) - Plugin architecture

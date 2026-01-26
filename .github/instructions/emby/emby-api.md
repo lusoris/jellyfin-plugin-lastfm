@@ -22,7 +22,7 @@ public interface ISessionManager
     event EventHandler<PlaybackProgressEventArgs> PlaybackProgress;
     event EventHandler<PlaybackStopEventArgs> PlaybackStopped;
 }
-```
+```text
 
 #### Event Args
 
@@ -42,7 +42,7 @@ public class PlaybackStopEventArgs : EventArgs
     public long? PlaybackPositionTicks { get; set; }  // Total played
     public SessionInfo Session { get; set; }
 }
-```
+```text
 
 #### Usage Example
 
@@ -73,7 +73,7 @@ public class ServerEntryPoint : IServerEntryPoint
         }
     }
 }
-```
+```text
 
 ---
 
@@ -93,7 +93,7 @@ public interface IUserDataManager
     void SaveUserData(Guid userId, BaseItem item, UserItemData userData, 
                      UserDataSaveReason reason, CancellationToken cancellationToken);
 }
-```
+```text
 
 #### UserItemData Properties
 
@@ -106,7 +106,7 @@ public class UserItemData
     public long? PlaybackPositionTicks { get; set; }  // Resume point
     public bool Played { get; set; }               // Marked as played
 }
-```
+```text
 
 #### UserDataSaveEventArgs
 
@@ -127,7 +127,7 @@ public enum UserDataSaveReason
     TogglePlayed,
     UpdateUserRating    // Favorite changes
 }
-```
+```text
 
 #### Usage Example
 
@@ -150,7 +150,7 @@ private async void OnUserDataSaved(object sender, UserDataSaveEventArgs e)
         await _apiClient.UnloveTrackAsync(audio, user).ConfigureAwait(false);
     }
 }
-```
+```text
 
 ---
 
@@ -171,7 +171,7 @@ public interface ILibraryManager
     
     Task<ItemResolveArgs> ResolvePath(FileSystemMetadata fileInfo, Folder parent = null);
 }
-```
+```text
 
 #### InternalItemsQuery (Filtering)
 
@@ -192,7 +192,7 @@ var query = new InternalItemsQuery(user)
 };
 
 var items = _libraryManager.GetItemList(query);
-```
+```text
 
 #### Usage Example: Find Track
 
@@ -218,7 +218,7 @@ public Audio FindMatchingTrack(string artist, string track, Guid userId)
             (a.Artists.Any(art => string.Equals(art, artist, StringComparison.OrdinalIgnoreCase)) ||
              a.AlbumArtists.Any(aa => string.Equals(aa, artist, StringComparison.OrdinalIgnoreCase))));
 }
-```
+```text
 
 ---
 
@@ -237,7 +237,7 @@ public interface IUserManager
     
     Task<User> AuthenticateUser(string username, string password, ...);
 }
-```
+```text
 
 #### Usage Example
 
@@ -260,7 +260,7 @@ private async Task ProcessScrobbleAsync(Audio audio, Guid userId)
     
     await _apiClient.ScrobbleAsync(audio, lastfmUser).ConfigureAwait(false);
 }
-```
+```text
 
 ---
 
@@ -284,7 +284,7 @@ public class HttpRequestOptions
     public int TimeoutMs { get; set; }
     public bool EnableHttpCompression { get; set; }
 }
-```
+```text
 
 #### GET Request
 
@@ -309,7 +309,7 @@ public async Task<T> GetAsync<T>(string url)
         }
     }
 }
-```
+```text
 
 #### POST Request
 
@@ -338,7 +338,7 @@ public async Task<T> PostAsync<T>(string url, Dictionary<string, string> data)
         }
     }
 }
-```
+```text
 
 ---
 
@@ -378,9 +378,10 @@ public class ServerEntryPoint : IServerEntryPoint
         }
     }
 }
-```
+```text
 
 **Log Levels**:
+
 - `Debug()` - Verbose debugging info
 - `Info()` - General information
 - `Warn()` - Warnings
@@ -402,7 +403,7 @@ public interface IServerConfigurationManager
     
     event EventHandler<ConfigurationUpdateEventArgs> ConfigurationUpdated;
 }
-```
+```text
 
 #### Usage Example
 
@@ -424,7 +425,7 @@ public class ServerEntryPoint : IServerEntryPoint
         _logger.Info($"Server URL: {serverUrl}");
     }
 }
-```
+```text
 
 ---
 
@@ -447,7 +448,7 @@ public class Audio : BaseItem
     public Dictionary<string, string> ProviderIds { get; set; }
     // e.g., ["MusicBrainzRecording"] = "mbid-value"
 }
-```
+```text
 
 ### Accessing Provider IDs
 
@@ -460,7 +461,7 @@ private string GetMusicBrainzId(Audio audio)
         ? audio.ProviderIds["MusicBrainzRecording"]
         : null;
 }
-```
+```text
 
 ---
 
@@ -479,7 +480,7 @@ public interface IScheduledTask
     IEnumerable<TaskTriggerInfo> GetDefaultTriggers();
     Task Execute(CancellationToken cancellationToken, IProgress<double> progress);
 }
-```
+```text
 
 ### Task Implementation
 
@@ -558,7 +559,7 @@ public class SyncLovedTracksTask : IScheduledTask
         }
     }
 }
-```
+```text
 
 ---
 
@@ -579,10 +580,11 @@ public class SyncLovedTracksTask : IScheduledTask
 ---
 
 **Related:**
+
 - [emby-architecture.md](emby-architecture.md) - Plugin lifecycle
 - [emby-patterns.md](emby-patterns.md) - .NET Framework 4.8 patterns
 - [../api-cross-reference.instructions.md](../api-cross-reference.instructions.md) - Last.fm ↔ Emby mapping
-        
+
         var audio = e.Item as Audio;
         var playedTicks = e.PlaybackPositionTicks ?? 0;
         var durationTicks = audio.RunTimeTicks ?? 0;
@@ -600,10 +602,11 @@ public class SyncLovedTracksTask : IScheduledTask
 // 2. ServerEntryPoint.cs - Event handling
 public class ServerEntryPoint : IServerEntryPoint
 {
-    public Task RunAsync() { /* Setup events */ }
-    public void Dispose() { /* Cleanup */ }
+    public Task RunAsync() { /*Setup events */ }
+    public void Dispose() { /* Cleanup*/ }
 }
-```
+
+```text
 
 ## Available Services (Constructor Injection)
 

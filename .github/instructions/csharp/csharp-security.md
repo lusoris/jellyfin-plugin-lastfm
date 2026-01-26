@@ -62,6 +62,7 @@ var result = await _apiClient.Scrobble(audio, lastfmUser);
 ```
 
 **Key Facts**:
+
 - Last.fm session keys don't expire (unless revoked by user)
 - Never store, log, or transmit passwords
 - Session keys should be treated as sensitive as passwords
@@ -390,6 +391,7 @@ Before committing code, verify:
 ---
 
 **Related**:
+
 - [csharp-patterns.md](csharp-patterns.md) - General patterns
 - [../lastfm-api.instructions.md](../lastfm-api.instructions.md) - API authentication
 - [../workflow/development-workflow.md](../workflow/development-workflow.md) - Build process

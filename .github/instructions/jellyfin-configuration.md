@@ -147,11 +147,13 @@ if (Plugin.Syncing)
 ## Security Notes
 
 ✅ **Do**:
+
 - Store only SessionKey (never password)
 - Clear/null SessionKey when authentication fails
 - Access SessionKey via configuration
 
 ❌ **Don't**:
+
 - Store passwords in config
 - Log SessionKeys
 - Transmit SessionKey in cleartext (always HTTPS)
@@ -159,5 +161,6 @@ if (Plugin.Syncing)
 ---
 
 **Related**:
+
 - [jellyfin-architecture.md](jellyfin-architecture.md) - Plugin lifecycle
 - [jellyfin-models.md](jellyfin-models.md) - Type reference

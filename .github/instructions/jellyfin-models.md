@@ -22,6 +22,7 @@ if (audio.RunTimeTicks.HasValue)
 ```
 
 **Key Facts**:
+
 - `RunTimeTicks` is in 100-nanosecond units (divide by 10,000,000 for seconds)
 - `Artists` is a list, use `.FirstOrDefault()` for primary artist
 - Always check `is not Audio` before casting
@@ -43,6 +44,7 @@ userData.LastPlayedDate // Last play timestamp
 ```
 
 **Common Checks**:
+
 ```csharp
 if (e.UserData.IsFavorite)
 {
@@ -70,6 +72,7 @@ user.Policy             // User policy (admin status, etc)
 ```
 
 **Key Pattern**:
+
 ```csharp
 var users = _userManager.GetUsers()
     .Where(u => u.Id == userIdFromEvent)
@@ -85,6 +88,7 @@ var lastfmUser = config.LastfmUsers
 ## Playback Event Arguments
 
 ### PlaybackProgressEventArgs
+
 ```csharp
 public class PlaybackProgressEventArgs
 {
@@ -96,6 +100,7 @@ public class PlaybackProgressEventArgs
 ```
 
 ### PlaybackStopEventArgs
+
 ```csharp
 public class PlaybackStopEventArgs
 {
@@ -107,6 +112,7 @@ public class PlaybackStopEventArgs
 ```
 
 ### UserDataSaveEventArgs
+
 ```csharp
 public class UserDataSaveEventArgs
 {
@@ -174,5 +180,6 @@ var hasScrobbling = config.LastfmUsers
 ---
 
 **Related**:
+
 - [jellyfin-architecture.md](jellyfin-architecture.md) - Plugin lifecycle
 - [jellyfin-configuration.md](jellyfin-configuration.md) - Config models

@@ -150,6 +150,7 @@ loggerMock.Verify(
 ### 1. Unit Test Core Logic
 
 Test business logic independently:
+
 ```csharp
 // ✅ Good - testable logic
 public class ScrobbleService
@@ -167,6 +168,7 @@ public class Md5SignatureGenerator
 ### 2. Interface Segregation
 
 Create testable interfaces:
+
 ```csharp
 // ✅ Good - mockable interface
 public interface ILastfmApiClient
@@ -212,12 +214,14 @@ public void ScrobbleRequest_BuildsCorrectParameters()
 | Method Coverage | >80% | Public APIs |
 
 **Focus coverage on:**
+
 - Scrobble validation logic
 - API request building
 - Signature generation
 - Track matching algorithms
 
 **Skip coverage for:**
+
 - Plugin entry points (DI registration)
 - Configuration models
 - Jellyfin callback handlers (require runtime)

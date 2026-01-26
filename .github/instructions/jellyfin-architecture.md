@@ -18,6 +18,7 @@ public class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages
 ```
 
 **Responsibilities**:
+
 - Plugin metadata (ID, name, version)
 - Configuration management
 - Web UI pages
@@ -77,6 +78,7 @@ public class ServerEntryPoint : IHostedService, IDisposable
 ```
 
 **Responsibilities**:
+
 - Wire up event listeners
 - Manage background operations
 - Handle graceful shutdown
@@ -175,6 +177,7 @@ private async void UserDataSaved(object sender, UserDataSaveEventArgs e)
 
 **Triggers**: When user changes ratings/favorites
 **SaveReasons**:
+
 - `UserDataSaveReason.UpdateUserRating` - Favorite toggle
 - `UserDataSaveReason.PlaybackFinished` - Alternative scrobble trigger
 
@@ -292,6 +295,7 @@ public class LastfmArtistProvider : IRemoteImageProvider, IHasOrder
 ```
 
 **Integration**:
+
 - Register in DI: `serviceCollection.AddSingleton<IRemoteImageProvider, LastfmArtistProvider>();`
 - Jellyfin calls automatically during metadata refresh
 - Higher `Order` = runs first
@@ -328,15 +332,18 @@ public class RestApi : ControllerBase
 ```
 
 **Pattern**:
+
 - `[ApiController]` decorator
 - `[Route("PluginName/Endpoint")]` routing
 - Services injected, `Plugin.Instance` available
 
 ---
 
-**Related**: 
+**Related**:
+
 - [copilot-instructions.md](copilot-instructions.md) - Overview & index
 - [lastfm-api.instructions.md](lastfm-api.instructions.md) - API details
+
 ---
 
 ## Available Interfaces for Plugin Features
@@ -390,6 +397,7 @@ These interfaces are automatically discovered by Jellyfin at startup. Just imple
 ---
 
 **Related:**
+
 - [jellyfin-api.index.md](jellyfin-api.index.md) - API interfaces reference
 - [jellyfin-configuration.md](jellyfin-configuration.md) - Configuration system
 - [jellyfin-models.md](jellyfin-models.md) - Data models

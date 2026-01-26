@@ -1,0 +1,28 @@
+# Docker Compose for Emby Plugin Testing
+# Usage: docker-compose -f docker-compose.test.yml up -d
+
+version: '3.8'
+
+services:
+  emby:
+    image: emby/embyserver:latest
+    container_name: emby-lastfm-test
+    environment:
+      - UID=1000
+      - GID=1000
+      - GIDLIST=1000
+    volumes:
+      - ./config:/config
+      - ./media:/media
+      # Plugin will be copied here for testing
+      - ./bin/Debug/netstandard2.0:/config/plugins/Jellyfin.Plugin.Lastfm:ro
+    ports:
+      - "8096:8096"  # HTTP
+      - "8920:8920"  # HTTPS
+    restart: unless-stopped
+    networks:
+      - emby-test
+
+networks:
+  emby-test:
+    driver: bridge
