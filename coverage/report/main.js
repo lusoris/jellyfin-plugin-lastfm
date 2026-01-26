@@ -310,7 +310,7 @@ var assemblies = [
       { "name": "Lastfm.Scrobbler.Core.Models.Track", "rp": "Lastfm.Scrobbler.Core_Track.html", "cl": 0, "ucl": 9, "cal": 9, "tl": 26, "cb": 0, "tb": 8, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
       { "name": "Lastfm.Scrobbler.Core.ScrobbleHandler", "rp": "Lastfm.Scrobbler.Core_ScrobbleHandler.html", "cl": 21, "ucl": 10, "cal": 31, "tl": 60, "cb": 10, "tb": 16, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
       { "name": "Lastfm.Scrobbler.Core.ScrobbleQueue<T1, T2>", "rp": "Lastfm.Scrobbler.Core_ScrobbleQueue_2.html", "cl": 0, "ucl": 45, "cal": 45, "tl": 90, "cb": 0, "tb": 22, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
-      { "name": "Lastfm.Scrobbler.Core.Utilities.SignatureGenerator", "rp": "Lastfm.Scrobbler.Core_SignatureGenerator.html", "cl": 29, "ucl": 0, "cal": 29, "tl": 61, "cb": 5, "tb": 6, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
+      { "name": "Lastfm.Scrobbler.Core.Utilities.SignatureGenerator", "rp": "Lastfm.Scrobbler.Core_SignatureGenerator.html", "cl": 29, "ucl": 0, "cal": 29, "tl": 61, "cb": 6, "tb": 6, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
     ]},
 ];
 
