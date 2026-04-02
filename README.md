@@ -3,7 +3,7 @@
 [![Build](https://github.com/lusoris/jellyfin-plugin-lastfm/actions/workflows/build-plugin.yaml/badge.svg)](https://github.com/lusoris/jellyfin-plugin-lastfm/actions/workflows/build-plugin.yaml)
 [![Release](https://img.shields.io/github/v/release/lusoris/jellyfin-plugin-lastfm)](https://github.com/lusoris/jellyfin-plugin-lastfm/releases/latest)
 [![.NET](https://img.shields.io/badge/.NET-9.0-512BD4)](https://dotnet.microsoft.com/)
-[![Jellyfin](https://img.shields.io/badge/Jellyfin-10.11.6-00A4DC)](https://jellyfin.org/)
+[![Jellyfin](https://img.shields.io/badge/Jellyfin-10.11.7-00A4DC)](https://jellyfin.org/)
 [![GitHub Stars](https://img.shields.io/github/stars/lusoris/jellyfin-plugin-lastfm)](https://github.com/lusoris/jellyfin-plugin-lastfm/stargazers)
 
 > **Fork Notice**: This is a maintained fork of [jesseward/jellyfin-plugin-lastfm](https://github.com/jesseward/jellyfin-plugin-lastfm), which was archived on 2026-01-31.
