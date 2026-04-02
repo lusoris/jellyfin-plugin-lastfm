@@ -1,1 +1,61 @@
-[{"guid": "5e7fe7f0-b048-429e-a431-b1a7e69c930d", "name": "Last.fm", "description": "Scrobble LastFM plays with Jellyfin", "overview": "A plugin that scrobbles your Jellyfin music to LastFM", "owner": "lusoris", "category": "music", "imageUrl": "https://raw.githubusercontent.com/lusoris/jellyfin-plugin-lastfm/main/resources/thumb.png", "versions": [{"version": "10.11.7.0", "changelog": "Jellyfin LastFM build v10.11.7.0", "targetAbi": "10.11.7.0", "sourceUrl": "https://github.com/lusoris/jellyfin-plugin-lastfm/releases/download/10.11.7.0/lastfm_10.11.7.0.zip", "checksum": "221d34c714877e87816072c978cf31e8", "timestamp": "2026-04-02T08:09:56+00:00Z"}, {"version": "10.11.6.1", "changelog": "Bug fixes: Fixed memory leaks (MD5, MemoryCache disposal), improved async exception handling", "targetAbi": "10.11.6.0", "sourceUrl": "https://github.com/lusoris/jellyfin-plugin-lastfm/releases/download/10.11.6.1/lastfm_10.11.6.1.zip", "checksum": "8a739bb1ae938b977d093c81d7f22b15", "timestamp": "2026-01-25T00:00:00Z"}, {"version": "10.11.6.0", "changelog": "Jellyfin 10.11.6 compatible - New version scheme matching Jellyfin releases", "targetAbi": "10.11.6.0", "sourceUrl": "https://github.com/lusoris/jellyfin-plugin-lastfm/releases/download/10.11.6.0/lastfm_10.11.6.0.zip", "checksum": "8f79056780070e1bd2e76d2ab5343809", "timestamp": "2026-01-25T00:00:00Z"}, {"version": "10.0.0.0", "changelog": "Jellyfin LastFM build v10.0.0.0", "targetAbi": "10.11.0.0", "sourceUrl": "https://github.com/jesseward/jellyfin-plugin-lastfm/releases/download/10.0.0.0/lastfm_10.0.0.0.zip", "checksum": "32277a418e7cddad5c66865418091438", "timestamp": "2025-10-25T20:03:04Z"}, {"version": "9.0.0.0", "changelog": "Jellyfin LastFM build v9.0.0.0", "targetAbi": "10.10.0.0", "sourceUrl": "https://github.com/jesseward/jellyfin-plugin-lastfm/releases/download/9.0.0.0/lastfm_9.0.0.0.zip", "checksum": "231cef743567e156db542d04c9088711", "timestamp": "2025-09-28T15:15:02Z"}, {"version": "8.2.0.0", "changelog": "Jellyfin LastFM build v8.2.0.0", "targetAbi": "10.9.0.0", "sourceUrl": "https://github.com/jesseward/jellyfin-plugin-lastfm/releases/download/8.2.0.0/lastfm_8.2.0.0.zip", "checksum": "d6dbd4df6a71351f342f6919f504b475", "timestamp": "2024-10-03T01:10:00Z"}]}]
+[
+  {
+    "guid": "5e7fe7f0-b048-429e-a431-b1a7e69c930d",
+    "name": "Last.fm",
+    "description": "Scrobble LastFM plays with Jellyfin",
+    "overview": "A plugin that scrobbles your Jellyfin music to LastFM",
+    "owner": "lusoris",
+    "category": "music",
+    "imageUrl": "https://raw.githubusercontent.com/lusoris/jellyfin-plugin-lastfm/main/resources/thumb.png",
+    "versions": [
+      {
+        "version": "10.11.7.0",
+        "changelog": "Jellyfin LastFM build v10.11.7.0",
+        "targetAbi": "10.11.7.0",
+        "sourceUrl": "https://github.com/lusoris/jellyfin-plugin-lastfm/releases/download/10.11.7.0/lastfm_10.11.7.0.zip",
+        "checksum": "221d34c714877e87816072c978cf31e8",
+        "timestamp": "2026-04-02T08:09:56Z"
+      },
+      {
+        "version": "10.11.6.1",
+        "changelog": "Bug fixes: Fixed memory leaks (MD5, MemoryCache disposal), improved async exception handling",
+        "targetAbi": "10.11.6.0",
+        "sourceUrl": "https://github.com/lusoris/jellyfin-plugin-lastfm/releases/download/10.11.6.1/lastfm_10.11.6.1.zip",
+        "checksum": "8a739bb1ae938b977d093c81d7f22b15",
+        "timestamp": "2026-01-25T00:00:00Z"
+      },
+      {
+        "version": "10.11.6.0",
+        "changelog": "Jellyfin 10.11.6 compatible - New version scheme matching Jellyfin releases",
+        "targetAbi": "10.11.6.0",
+        "sourceUrl": "https://github.com/lusoris/jellyfin-plugin-lastfm/releases/download/10.11.6.0/lastfm_10.11.6.0.zip",
+        "checksum": "8f79056780070e1bd2e76d2ab5343809",
+        "timestamp": "2026-01-25T00:00:00Z"
+      },
+      {
+        "version": "10.0.0.0",
+        "changelog": "Jellyfin LastFM build v10.0.0.0",
+        "targetAbi": "10.11.0.0",
+        "sourceUrl": "https://github.com/jesseward/jellyfin-plugin-lastfm/releases/download/10.0.0.0/lastfm_10.0.0.0.zip",
+        "checksum": "32277a418e7cddad5c66865418091438",
+        "timestamp": "2025-10-25T20:03:04Z"
+      },
+      {
+        "version": "9.0.0.0",
+        "changelog": "Jellyfin LastFM build v9.0.0.0",
+        "targetAbi": "10.10.0.0",
+        "sourceUrl": "https://github.com/jesseward/jellyfin-plugin-lastfm/releases/download/9.0.0.0/lastfm_9.0.0.0.zip",
+        "checksum": "231cef743567e156db542d04c9088711",
+        "timestamp": "2025-09-28T15:15:02Z"
+      },
+      {
+        "version": "8.2.0.0",
+        "changelog": "Jellyfin LastFM build v8.2.0.0",
+        "targetAbi": "10.9.0.0",
+        "sourceUrl": "https://github.com/jesseward/jellyfin-plugin-lastfm/releases/download/8.2.0.0/lastfm_8.2.0.0.zip",
+        "checksum": "d6dbd4df6a71351f342f6919f504b475",
+        "timestamp": "2024-10-03T01:10:00Z"
+      }
+    ]
+  }
+]
