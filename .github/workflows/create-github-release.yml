@@ -15,6 +15,7 @@ jobs:
   build:
     name: Publish binaries
     runs-on: ubuntu-latest
+    if: github.event_name == 'workflow_dispatch' || startsWith(github.ref, 'refs/tags/')
 
     steps:
     - name: Get tag name
