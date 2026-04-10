@@ -1,4 +1,4 @@
-name: "Publish"
+name: Publish
 
 on:
   push:
@@ -95,16 +95,16 @@ jobs:
         python -c "import json; m = json.load(open('manifest.json')); print('Manifest is valid JSON')"
         # Fix broken timestamp format: +00:00Z -> Z
         python -c "
-import json
-with open('manifest.json') as f:
-    d = json.load(f)
-for v in d[0].get('versions', []):
-    ts = v.get('timestamp', '')
-    if ts.endswith('+00:00Z'):
-        v['timestamp'] = ts.replace('+00:00Z', 'Z')
-with open('manifest.json', 'w') as f:
-    json.dump(d, f, indent=2)
-"
+        import json
+        with open('manifest.json') as f:
+            d = json.load(f)
+        for v in d[0].get('versions', []):
+            ts = v.get('timestamp', '')
+            if ts.endswith('+00:00Z'):
+                v['timestamp'] = ts.replace('+00:00Z', 'Z')
+        with open('manifest.json', 'w') as f:
+            json.dump(d, f, indent=2)
+        "
         echo "=== Updated Manifest ==="
         cat manifest.json | python -m json.tool
 
