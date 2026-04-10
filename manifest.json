@@ -9,6 +9,14 @@
     "imageUrl": "https://raw.githubusercontent.com/lusoris/jellyfin-plugin-lastfm/main/resources/thumb.png",
     "versions": [
       {
+        "version": "10.11.8.0",
+        "changelog": "Jellyfin LastFM build v10.11.8.0",
+        "targetAbi": "10.11.8.0",
+        "sourceUrl": "https://github.com/lusoris/jellyfin-plugin-lastfm/releases/download/10.11.8.0/lastfm_10.11.8.0.zip",
+        "checksum": "aded4c5d226ad40334ae0d223025aa71",
+        "timestamp": "2026-04-10T07:30:52Z"
+      },
+      {
         "version": "10.11.7.0",
         "changelog": "Jellyfin LastFM build v10.11.7.0",
         "targetAbi": "10.11.7.0",
